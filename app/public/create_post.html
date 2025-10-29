@@ -11,11 +11,14 @@
     </nav>
     <h1>Create Post</h1>
     <div>
-        <label for="title">Title:</label>
+        <label for="title" maxLength="20">Title:</label>
         <input id="title" type="text">
         <label for="description">Description:</label>
         <textarea id="description" rows="4" cols="40" maxLength="500"></textarea>
         <button id="submit">Submit</button>
+        <p id="errorMessage"></p>
     </div>
+
+    <script src="post.js"></script>
 </body>
 </html>
