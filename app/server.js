@@ -53,6 +53,26 @@ app.post("/createPost", (req, res)=> {
   return res.status(400).json({});
 });
 
+app.post("/register", async (req, res) => {
+  try {
+    const { studentId, firstName, lastName, email, phone, password } = req.body;
+
+    if (!email.endsWith("@drexel.edu")) {
+      return res.status(400).json({ message: "Invalid email address. Please use your Drexel email." })
+    }
+    if (!/^\d{8}$/.test(studentId)) {
+      return res.status(400).json({ message: "Invalid student ID. Please enter your Drexel Student ID." });
+    }
+    if (password.length < 4) {
+      return res.status(400).json({ message: "Password cannot be less than 4 characters." });
+    }
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error." })
+  }
+});
+
 app.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
 });
