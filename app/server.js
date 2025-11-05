@@ -1,5 +1,7 @@
 const pg = require("pg");
 const express = require("express");
+const cors = require("cors");
+const path = require("path");
 const app = express();
 app.use(express.json());
 
@@ -12,6 +14,10 @@ const pool = new Pool(env);
 pool.connect().then(function () {
   console.log(`Connected to database ${env.database}`);
 });
+
+const authRoutes = require("./routes/auth");
+app.use("/auth", authRoutes);
+
 
 app.use(express.static("public"));
 app.post("/createPost", (req, res)=> {

@@ -1,5 +1,6 @@
+
 const pg = require("pg");
-const env = require("./env.json");
+const env = require("../env.json");
 
 
 const Pool = pg.Pool;
