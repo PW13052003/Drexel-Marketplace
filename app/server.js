@@ -68,7 +68,7 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Password cannot be less than 4 characters." });
     }
 
-    // NEW CHANGES - HASHING
+    // NEW CHANGES - HASHING FEATURE
 
     const hashedPassword = await argon2.hash(password);
     console.log("Password hashed successfully:", hashedPassword);
