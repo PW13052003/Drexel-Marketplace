@@ -2,15 +2,15 @@
 <html>
   <head>
     <title>Private Chat Test</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <h2>Private Chat Test</h2>
-
-    <label>Enter Room ID:</label>
-    <input id="roomInput" placeholder="e.g. buyer123_seller456" />
-    <button id="joinBtn">Join Room</button>
-
-    <hr />
+    <div id="join-area">
+      <h2>Private Chat Test</h2>
+      <label>Enter Room ID:</label>
+      <input id="roomInput">
+      <button id="joinBtn">Join Room</button>
+    </div>
 
     <ul id="messages"></ul>
     <form id="form">
@@ -69,8 +69,15 @@
       socket.on("chat message", (data) => {
         const item = document.createElement("li");
         item.textContent = `${data.sender}: ${data.message}`;
+        
+        // Check if the sender is the current user
+        if (data.sender === username) {
+          item.classList.add("my-message");
+        }
         messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight; // Auto-scroll to bottom
       });
+
     </script>
   </body>
 </html>
