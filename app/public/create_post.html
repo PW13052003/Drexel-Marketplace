@@ -10,11 +10,43 @@
         <a href="home.html">Home</a> <!--placeholder-->
     </nav>
     <h1>Create Post</h1>
-    <div>
-        <label for="title" maxLength="20">Title:</label>
-        <input id="title" type="text">
-        <label for="description">Description:</label>
-        <textarea id="description" rows="4" cols="40" maxLength="500"></textarea>
+    <div class="form">
+        <div>
+            <label for="title" maxLength="20">Title:</label>
+            <input id="title" type="text">
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <textarea id="description" rows="4" cols="40" maxLength="500"></textarea>
+        </div>
+        <div>
+            <label for="price" >Price:</label>
+            <input id="price" type="number" min="0.00" step="0.01" >
+        </div>
+        <div>
+            <label>Item Condition:</label>
+            <input type="radio" name="condition" value="new">
+            <label>New</label>
+            <input type="radio" name="condition" value="used">
+            <label>Used</label>
+	    </div>
+        <div>
+            <label for="images">Images:</label>
+            <input id="images" type="file" multiple accept="image/*">
+        </div>
+        <div id="preview"></div>
+        <div>
+        <label for="category">Category:</label>
+            <select id="category" name="category">
+                <option value="">Please select the item's category</option>
+                <option value="clothing">Clothing</option>
+                <option value="electronics">Electronics</option>
+                <option value="home">Home</option>
+                <option value="furniture">Furniture</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        
         <button id="submit">Submit</button>
         <p id="errorMessage"></p>
     </div>
