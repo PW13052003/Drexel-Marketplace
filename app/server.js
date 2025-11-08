@@ -1,6 +1,7 @@
 const pg = require("pg");
 const express = require("express");
 const app = express();
+const argon2 = require("argon2");
 app.use(express.json());
 
 const port = 3000;
@@ -71,7 +72,7 @@ app.post("/register", async (req, res) => {
 
     const hashedPassword = await argon2.hash(password);
     console.log("Password hashed successfully:", hashedPassword);
-    
+
   }
   catch (err) {
     console.error(err);
