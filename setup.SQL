@@ -5,7 +5,10 @@ CREATE TABLE posts (
     user_id INTEGER,
 	title VARCHAR(20),
 	post_desription VARCHAR(500),
-	time_posted TIMESTAMP 
+	time_posted TIMESTAMP,
+  price NUMERIC(10,2),
+  condition VARCHAR(4),
+  category VARCHAR(12)
 );
 
 CREATE TABLE users (

@@ -46,7 +46,8 @@ function submit(){
     }
     /* CLIENT_SIDE VALIDATION */
     // make sure price is a number >= 0 in correct price format (using regex)
-    if(isNaN(price) || price < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(price))) {
+    if(isNaN(price) || price < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(price))
+    || price > 99999999.99) {
         errorMessage.textContent = "Please enter a valid price";
         return;
      }
@@ -65,7 +66,8 @@ function submit(){
       "Content-type": "application/json"
     },
     // TODO: once authentication is set up change the userID to get the current userID
-    body: JSON.stringify({title: title, description: description, userID: 1, date: dateString}),
+    body: JSON.stringify({title: title, description: description, userID: 1, 
+        date: dateString, price: price, condition: condition, category: category}),
     }).then(response => {
     console.log("Response received:", response.status);
     if(response.status != 200){
