@@ -12,6 +12,7 @@ const fileUpload = require('express-fileupload');
 app.use(fileUpload({
     createParentPath: true
 }));
+app.use(express.urlencoded({ extended: true }));
 
 const port = 3000;
 const hostname = "localhost";
@@ -183,8 +184,8 @@ app.post("/register", async (req, res) => {
     // NEW CHANGES - HASHING FEATURE
 
     const hashedPassword = await argon2.hash(password);
-    console.log("Password hashed successfully:", hashedPassword);
-
+    console.log("Other form data:", req.body);
+    res.status(200).json({ message: "Password hashed successfully!" });
   }
   catch (err) {
     console.error(err);
