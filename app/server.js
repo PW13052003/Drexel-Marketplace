@@ -113,7 +113,7 @@ app.post("/register", async (req, res) => {
 
     const hashedPassword = await argon2.hash(password);
     console.log("Password hashed successfully:", hashedPassword);
-
+    res.status(200).json({ message: "Password hashed successfully!" });
   }
   catch (err) {
     console.error(err);
