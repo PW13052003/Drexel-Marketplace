@@ -20,3 +20,4 @@ CREATE TABLE users (
   verification_token VARCHAR(255)
 );
 
+
