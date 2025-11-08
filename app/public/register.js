@@ -19,7 +19,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
 
     // Validate password - should not be less than 4 characters
     if (password.length < 4) {
-        alert('Password must be at least 8 characters long.');
+        alert('Password must be at least 4 characters long.');
         e.preventDefault();
         return;
     }
