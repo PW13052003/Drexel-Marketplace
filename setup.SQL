@@ -20,4 +20,10 @@ CREATE TABLE users (
   verification_token VARCHAR(255)
 );
 
-
+CREATE TABLE messages (
+  id SERIAL PRIMARY KEY,
+  room_id VARCHAR(100) NOT NULL,
+  sender VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
