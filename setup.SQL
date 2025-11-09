@@ -11,6 +11,13 @@ CREATE TABLE posts (
   category VARCHAR(12)
 );
 
+CREATE TABLE images(
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER,
+  imagePath VARCHAR(100)
+
+);
+
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   student_id VARCHAR(8) NOT NULL,

@@ -26,58 +26,134 @@ function displayUploadedImages(){
 imageInput.addEventListener("change", displayUploadedImages);
 
 function submit(){
-    // Get the input values
-    let condition = ""
-    let date = new Date(); // gets the current date
-    let dateString = date.getFullYear() + "-" + (date.getMonth() + 1)+ "-" + date.getDate() + " ";
-    dateString += date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-    let title = titleInput.value;
-    let description = descriptionInput.value;
-    let price = priceInput.value;
-    let selected = document.querySelector('input[name="condition"]:checked');
-    if(selected){
-        condition = selected.value;
+    // If there are no images to upload skip this step
+    if(imageInput.files.length === 0){addPost([]); return;}
+    // First upload the images so we can put the paths to them in the database
+    const formData = new FormData();
+    for (let file of imageInput.files) {
+        formData.append("images", file);
     }
-    let category = categoryInput.value;
-
-    if(title.length < 1 || title.length > 20){
-        errorMessage.textContent = "Title must be 1-20 characters";
-        return;
-    }
-    /* CLIENT_SIDE VALIDATION */
-    // make sure price is a number >= 0 in correct price format (using regex)
-    if(isNaN(price) || price < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(price))
-    || price > 99999999.99) {
-        errorMessage.textContent = "Please enter a valid price";
-        return;
-     }
-     if( condition === "") {
-        errorMessage.textContent = "Please select a condition";
-        return;
-     }
-     if(category === "") {
-        errorMessage.textContent = "Please select a category";
-        return;
-     }
-
-    fetch("/createPost",{
+    fetch("/uploadImages",{
     method:"POST",
-    headers: {
-      "Content-type": "application/json"
-    },
-    // TODO: once authentication is set up change the userID to get the current userID
-    body: JSON.stringify({title: title, description: description, userID: 1, 
-        date: dateString, price: price, condition: condition, category: category}),
+    body: formData
     }).then(response => {
     console.log("Response received:", response.status);
     if(response.status != 200){
-        errorMessage.textContent = "Bad request";
+        errorMessage.textContent = "Failed to upload images";
     }else{
-        errorMessage.textContent = "Success";
+        return response.json();
     }
-    }).catch(error => {
+    })
+    .then(data => {
+        let imagePaths = data.uploadedImages;
+        // Images were uploaded, add the post to the database
+        addPost(imagePaths);
+        
+    })
+    .catch(error => {
         console.log(error);
+        return;
     });
+
+    
+}
+
+function addPost(imagePaths){
+    let condition = ""
+        let date = new Date(); // gets the current date
+        let dateString = date.getFullYear() + "-" + (date.getMonth() + 1)+ "-" + date.getDate() + " ";
+        dateString += date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+        let title = titleInput.value;
+        let description = descriptionInput.value;
+        let price = priceInput.value;
+        let selected = document.querySelector('input[name="condition"]:checked');
+        if(selected){
+            condition = selected.value;
+        }
+        let category = categoryInput.value;
+
+        if(title.length < 1 || title.length > 20){
+            errorMessage.textContent = "Title must be 1-20 characters";
+            return;
+        }
+        /* CLIENT_SIDE VALIDATION */
+        // make sure price is a number >= 0 in correct price format (using regex)
+        if(isNaN(price) || price < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(price))
+        || price > 99999999.99) {
+            errorMessage.textContent = "Please enter a valid price";
+            return;
+        }
+        if( condition === "") {
+            errorMessage.textContent = "Please select a condition";
+            return;
+        }
+        if(category === "") {
+            errorMessage.textContent = "Please select a category";
+            return;
+        }
+
+        fetch("/createPost",{
+        method:"POST",
+        headers: {
+        "Content-type": "application/json"
+        },
+        // TODO: once authentication is set up change the userID to get the current userID
+        body: JSON.stringify({title: title, description: description, userID: 1, 
+            date: dateString, price: price, condition: condition, category: category}),
+        }).then(response => {
+        console.log("Response received:", response.status);
+        if(response.status != 200){
+            errorMessage.textContent = "Bad request";
+            return;
+        }
+        return response.json();
+        })
+        .then(data => {
+            console.log("New Post ID:", data.postID);
+            if(imagePaths.length > 0){
+                // add the image paths to the database if there are any
+                addImages(data.postID, imagePaths);
+            }else{
+                // no image paths to add, skip last step
+                 errorMessage.textContent = "Success";
+            }
+            
+    
+        }).catch(error => {
+            console.log(error);
+        });
+}
+
+function addImages(postID, imagePaths){
+    fetch("/addImages" ,{
+        method:"POST",
+        headers: {
+        "Content-type": "application/json"
+        },
+        body : JSON.stringify({postID: postID, paths: imagePaths}),
+    }).then(response => {
+        console.log("Response received:", response.status);
+        if(response.status != 200){
+            errorMessage.textContent = "Bad request";
+            return;
+        }else{
+            errorMessage.textContent = "Success";
+        }
+    }).catch(error => {
+            console.log(error);
+    });
+    
 }
 
 submitButton.addEventListener("click", submit);
+// Clear the image upload/preview so the user can pick new images without
+// having to refresh
+function resetFile() {
+    imageInput.value = '';
+    while (imagePreview.firstChild) {
+        imagePreview.removeChild(imagePreview.firstChild);
+    }
+}
+
+let resetButton = document.getElementById("resetImages");
+resetButton.addEventListener("click", resetFile);
