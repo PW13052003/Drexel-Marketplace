@@ -4,6 +4,7 @@ const nodemailer = require("nodemailer");
 const pool = require("../db"); 
 const router = express.Router();
 const env = require("../../env.json");
+const argon2 = require("argon2");
 
 // --- Checks if the email is already in use, creates a verification token, inserts the new user, and sends the email ---
 router.post("/register", async (req, res) => {
@@ -21,12 +22,13 @@ router.post("/register", async (req, res) => {
 
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedPassword = await argon2.hash(password);
 
     // Insert new user into the database (verified = false)
     await pool.query(
       `INSERT INTO users (student_id, first_name, last_name, email, phone, password, verification_token, verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [studentId, firstName, lastName, email, phone, password, verificationToken, false]
+      [studentId, firstName, lastName, email, phone, hashedPassword, verificationToken, false]
     );
 
     // Create a Nodemailer transporter using our Gmail Account
