@@ -37,3 +37,12 @@ CREATE TABLE messages (
   message TEXT NOT NULL,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    review_text VARCHAR(300),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
