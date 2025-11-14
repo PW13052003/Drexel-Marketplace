@@ -46,3 +46,10 @@ CREATE TABLE reviews (
     review_text VARCHAR(300),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE purchases (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
