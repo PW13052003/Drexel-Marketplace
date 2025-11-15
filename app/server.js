@@ -120,8 +120,9 @@ app.post("/createPost", (req, res)=> {
     }
 
     pool.query(
-      `INSERT INTO posts (user_id, title, post_desription, time_posted, price, condition, category)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO posts (user_id, title, post_description, time_posted, price, condition, category, sold,
+  sold_to_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, false, -1)
       RETURNING id`,
       [userID, title, description, date, price, condition, category],
       (err, result) => {
@@ -161,6 +162,7 @@ app.post('/addImages', (req, res)=> {
     return res.status(400).json({});
   }
 });
+app.use("/Images", express.static(path.join(__dirname, "public/Images")));
 
 app.post('/uploadImages', (req, res) => {
     let images = req.files.images;
@@ -178,7 +180,7 @@ app.post('/uploadImages', (req, res) => {
       // generate a unique name for the image being saved + the file extension
       const filename = uuidv4() + ext; 
       // move the uploaded image to images folder
-      image.mv(path.join(__dirname, 'Images', filename), (err) => {
+      image.mv(path.join(__dirname, 'public/Images', filename), (err) => {
         if (err) {
             console.error(err);
             return res.status(500).send('Failed to save image');
@@ -191,7 +193,27 @@ app.post('/uploadImages', (req, res) => {
     res.json({uploadedImages});
 });
 
-app.get("/search", (req, res) => {
+app.get("/getImages", (req,res) => { // gets the images for the given post id
+  let postID = req.query.postID;
+  if (!postID) {
+    return res.status(400).json({ error: "postID is required" });
+  }
+
+  pool.query("SELECT imagepath FROM images WHERE post_id = $1", [postID])
+    .then(result => {
+      if (result.rows.length === 0) {
+        return res.json({ images: []});
+      }
+      res.json({ images: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+});
+
+app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
+// the current user's posts. Automatically puts most recent posts first
   let titleText = req.query.titleText;
   let isNew = req.query.isNew;
   let isUsed = req.query.isUsed;
@@ -202,7 +224,8 @@ app.get("/search", (req, res) => {
   let isHome = req.query.isHome;
   let isFurniture = req.query.isFurniture;
   let isOther = req.query.isOther;
-
+  let userID = req.query.userID;
+// server side price validation
   if(minPrice){
     if(isNaN(minPrice) || minPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(minPrice))
     || minPrice > 99999999.99) {
@@ -257,9 +280,15 @@ app.get("/search", (req, res) => {
     query += " AND category = ANY($" + (params.length + 1) + ")"; // Select any of the checked categories
     params.push(categories);
   }
+  query += " AND user_id != $" + (params.length + 1);
+  params.push(userID);
+
   query += " ORDER BY time_posted DESC";
   pool.query(query, params).then(result => {
-    res.json({rows: result.rows});
+    res.json({ rows: result.rows });
+  }).catch(err => {
+    console.error(err);
+    res.status(500).json({ error: "server error" });
   });
 });
 app.post("/register", async (req, res) => {

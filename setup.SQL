@@ -4,11 +4,13 @@ CREATE TABLE posts (
 	id SERIAL PRIMARY KEY,
     user_id INTEGER,
 	title VARCHAR(20),
-	post_desription VARCHAR(500),
+	post_description VARCHAR(500),
 	time_posted TIMESTAMP,
   price NUMERIC(10,2),
   condition VARCHAR(4),
-  category VARCHAR(12)
+  category VARCHAR(12),
+  sold BOOLEAN,
+  sold_to_id INTEGER
 );
 
 CREATE TABLE images(
