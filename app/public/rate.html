@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate products</title>
+</head>
+<body>
+    <h2>Reviews</h2>
+
+    <p>Enter a Post ID to load reviews & check eligbility.</p>
+
+    <label>Post ID</label>
+    <input type="number" id="postIdInput">
+    <button id="loadBtn">Load</button>
+
+    <p id="eligibilityMessage"></p>
+
+    <div id="reviewSection">
+        <h3>Leave a Review</h3>
+        <label>Rating:</label>
+        <select id="rating">
+            <option value="">SELECT FROM THE OPTIONS BELOW</option>
+            <option value="1">1 - Bad</option>
+            <option value="2">2 - Below Average</option>
+            <option value="3">3 - Average</option>
+            <option value="4">4 - Good</option>
+            <option value="5">5 - Excellent</option>
+        </select>
+        <br>
+        <br>
+        <label>Add a Comment (OPTIONAL)</label>
+        <textarea id="review_text" rows="4" maxlength="300"></textarea>
+        <br>
+        <br>
+        <button id="submitReview">Submit Review</button>
+        <p id="reviewMessage"></p>
+    </div>
+
+    <hr>
+
+    <h3>More Reviews</h3>
+    <div id="reviewsList"></div>
+    <script src="rate.js"></script>
+
+</body>
+</html>
