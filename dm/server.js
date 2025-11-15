@@ -9,6 +9,17 @@ const io = new Server(server);
 const pool = require("../app/db");
 app.use(express.static(__dirname));
 
+
+function getRoomId(user1, user2) {
+  const uid1 = String(user1).trim();
+  const uid2 = String(user2).trim();
+
+  return uid1 < uid2
+    ? `dm_${uid1}_${uid2}`
+    : `dm_${uid2}_${uid1}`;
+}
+
+
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
@@ -25,6 +36,18 @@ app.get("/history/:roomId", async (req, res) => {
     console.error("Error fetching messages:", err);
     res.status(500).send("Server error fetching messages");
   }
+});
+
+// Create or fetch DM room for two users
+app.get("/dmRoom", (req, res) => {
+  const { user1, user2 } = req.query;
+
+  if (!user1 || !user2) {
+    return res.status(400).json({ error: "Missing user parameters" });
+  }
+
+  const roomId = getRoomId(user1, user2);
+  res.json({ roomId });
 });
 
 

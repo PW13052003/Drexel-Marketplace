@@ -8,6 +8,29 @@ app.use(express.json());
 const { v4: uuidv4 } = require('uuid');
 const fileUpload = require('express-fileupload');
 
+
+// DM ROOM HELPER
+function getDMRoom(userA, userB) {
+  const a = Number(userA);
+  const b = Number(userB);
+
+  if (isNaN(a) || isNaN(b)) {
+    throw new Error("User IDs must be numbers for DM rooms.");
+  }
+
+  return a < b ? `dm_${a}_${b}` : `dm_${b}_${a}`;
+}
+
+function getRoomId(user1, user2) {
+  const sorted = [Number(user1), Number(user2)].sort((a, b) => a - b);
+  return `dm_${sorted[0]}_${sorted[1]}`;
+}
+
+console.log(getRoomId(5, 10));
+console.log(getRoomId(10, 5));
+console.log(getRoomId("20", "20"));
+console.log(getRoomId(88, 92));
+
 // Needed for uploading images to publoc/Images
 app.use(fileUpload({
     createParentPath: true

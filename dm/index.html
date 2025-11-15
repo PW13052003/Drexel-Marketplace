@@ -40,21 +40,30 @@
 
       
       joinBtn.addEventListener("click", async () => {
-        roomId = roomInput.value.trim();
-        if (roomId) {
-            socket.emit("joinRoom", roomId);
-            alert(`Joined room: ${roomId}`);
+        const user1 = prompt("Enter your user ID:");
+        const user2 = prompt("Enter the other user's ID:");
 
-            // Fetch message history
-            const res = await fetch(`/history/${roomId}`);
-            const data = await res.json();
-            data.forEach((msg) => {
-            const item = document.createElement("li");
-            item.textContent = `${msg.sender}: ${msg.message}`;
-            messages.appendChild(item);
-            });
-        }
+        // Get roomId from backend
+        const res = await fetch(`/dmRoom?user1=${user1}&user2=${user2}`);
+        const data = await res.json();
+
+        roomId = data.roomId;
+
+        socket.emit("joinRoom", roomId);
+        alert(`Joined private chat room: ${roomId}`);
+
+        // Load history
+        const history = await fetch(`/history/${roomId}`);
+        const messagesData = await history.json();
+
+        messages.innerHTML = ""; // clear
+        messagesData.forEach((msg) => {
+          const item = document.createElement("li");
+          item.textContent = `${msg.sender}: ${msg.message}`;
+          messages.appendChild(item);
         });
+      });
+
 
       // Send chat message
       form.addEventListener("submit", (e) => {
