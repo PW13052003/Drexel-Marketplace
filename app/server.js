@@ -181,8 +181,6 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Password cannot be less than 4 characters." });
     }
 
-    // NEW CHANGES - HASHING FEATURE
-
     const hashedPassword = await argon2.hash(password);
     console.log("Other form data:", req.body);
     res.status(200).json({ message: "Password hashed successfully!" });
@@ -192,6 +190,252 @@ app.post("/register", async (req, res) => {
     res.status(500).json({ message: "Server error." })
   }
 });
+
+
+// NEW ADDITIONS FOR REVIEWING SELLER
+app.post("/purchase", async (req, res) => {
+  try {
+    const { post_id } = req.body;
+
+    const buyer_id = 1;
+
+    if (!post_id) {
+      return res.status(400).json({ message: "post_id is required" });
+    }
+
+    const postResult = await pool.query(
+      "SELECT user_id FROM posts WHERE id = $1;",
+      [post_id]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const seller_id = postResult.rows[0].user_id;
+
+    if (seller_id === buyer_id) {
+      return res.status(400).json({ message: "You cannot purchase your own item" });
+    }
+
+    const existingPurchase = await pool.query(
+      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2;",
+      [post_id, buyer_id]
+    );
+
+    if (existingPurchase.rows.length > 0) {
+      return res.status(400).json({ message: "You have already purchased this item" });
+    }
+
+    await pool.query(
+      `INSERT INTO purchases (post_id, buyer_id) VALUES ($1, $2);`,
+    )
+    return res.status(200).json({ 
+      message: "Purchase recorded successfully!",
+      post_id,
+      buyer_id
+    });
+  }
+
+  catch (err) {
+    console.error("Purchase error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/addReview", async (req, res) => {
+  try {
+    const { post_id, rating, review_text } = req.body;
+    const buyer_id = 1;
+
+    if (!post_id) {
+      return res.status(400).json({ message: "post_id is required" });
+    }
+
+    if (rating === undefined || rating === null) {
+      return res.status(400).json({ message: "rating is required" });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "rating must be between 1 and 5" });
+    }
+
+    const postResult = await pool.query(
+      "SELECT user_id FROM posts WHERE id = $1;",
+      [post_id]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const seller_id = postResult.rows[0].user_id;
+
+    if (seller_id === buyer_id) {
+      return res.status(400).json({ message: "You cannot review your own item" });
+    }
+
+    const purchaseCheck = await pool.query(
+      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2;",
+      [post_id, buyer_id]
+    );
+
+    if (purchaseCheck.rows.length === 0) {
+      return res.status(400).json({ message: "You cannot review this item because you have not purchased it" });
+    }
+
+    const reviewCheck = await pool.query(
+      "SELECT id FROM reviews WHERE post_id = $1 AND buyer_id = $2;",
+      [post_id, buyer_id]
+    );
+
+    if (reviewCheck.rows.length > 0) {
+      return res.status(400).json({ message: "You have already reviewed this item" });
+    }
+
+    await pool.query(
+      `INSERT INTO reviews (post_id, buyer_id, rating, review_text) VALUES ($1, $2, $3, $4);`,
+      [post_id, buyer_id, rating, review_text]
+    );
+
+    return res.status(200).json({
+      message: "Review added successfully!",
+      post_id,
+      buyer_id,
+      rating,
+      review_text,
+    });
+  }
+  
+  catch (err) {
+    console.error("Review error", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/reviews/product/:post_id", async (req, res) => {
+  try {
+    const { post_id } = req.params;
+
+    if (!post_id) {
+      return res.status(400).json({ message: "post_id is required" });
+    }
+
+    const result = await pool.query(
+      `SELECT r.rating, r.review_text, r.created_at, u.first_name, u.last_name
+       FROM reviews r
+       JOIN users u ON r.buyer_id = u.id
+       WHERE r.post_id = $1
+       ORDER BY r.created_at DESC`,
+      [post_id]
+    );
+
+    return res.status(200).json({
+      post_id,
+      reviews: result.rows
+    });
+  }
+
+  catch (err) {
+    console.error("Error fetching product reviews:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/reviews/seller/:seller_id", async (req, res) => {
+  try {
+    const { seller_id } = req.params;
+
+    if (!seller_id) {
+      return res.status(400).json({ message: "seller_id is required" });
+    }
+
+    const reviewsResult = await pool.query(
+      `SELECT r.rating, r.review_text, r.created_at, u.first_name, u.last_name, p.title AS product_title
+       FROM reviews r
+       JOIN posts p ON r.post_id = p.id
+       JOIN users u ON r.buyer_id = u.id
+       WHERE p.user_id = $1
+       ORDER BY r.created_at DESC`,
+      [seller_id]
+    );
+
+    const reviews = reviewsResult.rows;
+
+    // Compute average rating and total reviews
+    let avgRating = null;
+    if (reviews.length > 0) {
+      const sum = reviews.reduce((acc, row) => acc + row.rating, 0);
+      avgRating = (sum / reviews.length).toFixed(2);
+    }
+
+    return res.status(200).json({
+      seller_id,
+      average_rating: avgRating,
+      total_reviews: reviews.length,
+      reviews
+    });
+  }
+
+  catch(err) {
+    console.error("Error fetching seller reviews:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+})
+
+app.get("/reviews/eligibility/:post_id/:buyer_id", async (req, res) => {
+  try {
+    const { post_id, buyer_id } = req.params;
+
+    if (!post_id || !buyer_id) {
+      return res.status(400).json({ message: "post_id and buyer_id are required" });
+    }
+
+    const postResult = await pool.query(
+      "SELECT user_id FROM posts WHERE id = $1",
+      [post_id]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const seller_id = postResult.rows[0].user_id;
+
+    const isSeller = (parseInt(buyer_id) === seller_id);
+
+    const purchaseResult = await pool.query(
+      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2",
+      [post_id, buyer_id]
+    );
+
+    const hasPurchased = purchaseResult.rows.length > 0;
+
+    const reviewResult = await pool.query(
+      "SELECT id FROM reviews WHERE post_id = $1 AND buyer_id = $2",
+      [post_id, buyer_id]
+    );
+
+    const alreadyReviewed = reviewResult.rows.length > 0;
+
+    const canReview = hasPurchased && !alreadyReviewed && !isSeller;
+
+    return res.status(200).json({
+      post_id,
+      buyer_id,
+      isSeller,
+      hasPurchased,
+      alreadyReviewed,
+      canReview
+    });
+  }
+
+  catch(err) {
+    console.error("Eligibility check error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 app.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
