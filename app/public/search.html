@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Create Post</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    
+</head>
+<body>
+    <nav>
+        <a href="home.html">Home</a> <!--placeholder-->
+        <a href="create_post.html">Create Post</a>
+    </nav>
+    <div>
+        <input id="searchBar" type="text" placeholder="Search for an item by name...">
+        <button id="submit">Search</button>
+        
+    </div>
+    <div>
+        <h3>Condition</h3>
+        <ul style="list-style-type:none;">
+            <li>
+                <label for="new"> New</label>
+                <input type="checkbox" id="new" name="new" value="New">
+            </li>
+            <li>
+                <label for="used">Used</label>
+                <input type="checkbox" id="used" name="used" value="Used">
+            </li>
+        </ul>
+        
+    </div>
+    <div>
+        <h3>Price Range</h3>
+        <label for="minPrice" >Minimum:</label>
+        <input id="minPrice" type="number" min="0.00" step="0.01" >
+        <label for="maxPrice" >Maximum:</label>
+        <input id="maxPrice" type="number" min="0.00" step="0.01" >
+    </div>
+    <div>
+        <h3>Category</h3>
+        <ul style="list-style-type:none;">
+            <li>
+                <label for="clothing">Clothing</label>
+                <input type="checkbox" id="clothing" name="clothing" value="clothing">
+            </li>
+            <li>
+                <label for="electronics">Electronics</label>
+                <input type="checkbox" id="electronics" name="electronics" value="electronics">
+            </li>
+            <li>
+                <label for="home">Home</label>
+                <input type="checkbox" id="home" name="home" value="home">
+            </li>
+            <li>
+                <label for="furniture">Furniture</label>
+                <input type="checkbox" id="furniture" name="furniture" value="furniture">
+            </li>
+            <li>
+                <label for="other">Other</label>
+                <input type="checkbox" id="other" name="other" value="other">
+            </li>
+        </ul>
+    </div>
+
+    <div id="postDisplay">
+
+    </div>
+    <script src="search.js"></script>
+</body>
+</html>

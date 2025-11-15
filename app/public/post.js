@@ -12,6 +12,7 @@ let errorMessage = document.getElementById("errorMessage");
 let imageInput = document.getElementById("images");
 let imagePreview = document.getElementById("preview");
 function displayUploadedImages(){
+    clearImagePreview();
     console.log(imageInput.files);
     for(file of imageInput.files){
         const img = document.createElement("img");
@@ -150,6 +151,10 @@ submitButton.addEventListener("click", submit);
 // having to refresh
 function resetFile() {
     imageInput.value = '';
+    clearImagePreview();
+}
+
+function clearImagePreview() {
     while (imagePreview.firstChild) {
         imagePreview.removeChild(imagePreview.firstChild);
     }

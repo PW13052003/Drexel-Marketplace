@@ -26,6 +26,7 @@ pool.connect().then(function () {
 
 
 const authRoutes = require("./routes/auth");
+const { title } = require("process");
 app.use("/auth", authRoutes);
 
 
@@ -167,6 +168,77 @@ app.post('/uploadImages', (req, res) => {
     res.json({uploadedImages});
 });
 
+app.get("/search", (req, res) => {
+  let titleText = req.query.titleText;
+  let isNew = req.query.isNew;
+  let isUsed = req.query.isUsed;
+  let minPrice = req.query.minPrice;
+  let maxPrice = req.query.maxPrice;
+  let isClothing = req.query.isClothing;
+  let isElectronics = req.query.isElectronics;
+  let isHome = req.query.isHome;
+  let isFurniture = req.query.isFurniture;
+  let isOther = req.query.isOther;
+
+  if(minPrice){
+    if(isNaN(minPrice) || minPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(minPrice))
+    || minPrice > 99999999.99) {
+      console.log("invalid minPrice");
+      return res.status(400).json({});
+    }
+  }
+  if(maxPrice){
+    if(isNaN(maxPrice) || maxPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(maxPrice))
+    || maxPrice > 99999999.99) {
+      console.log("invalid maxPrice");
+      return res.status(400).json({});
+  }
+  }
+  if(minPrice && maxPrice){
+    if(minPrice > maxPrice) {
+    console.log("invalid price range");
+    return res.status(400).json({});
+  }
+  }
+  
+
+  const categories = [];
+  if (isClothing === "true") categories.push("clothing");
+  if (isElectronics === "true") categories.push("electronics");
+  if (isHome === "true") categories.push("home");
+  if (isFurniture === "true") categories.push("furniture");
+  if (isOther === "true") categories.push("other");
+
+
+  console.log(req.query);
+  let params = [`%${titleText}%`];
+  let query = "SELECT * FROM posts WHERE ($1::text IS NULL OR title ILIKE $1::text)"; // ILIKE is for case insensitive string matches
+  if (isNew === "true" && isUsed !== "true") {
+    query += " AND condition = 'new'";
+  } else if (isUsed === "true" && isNew !== "true") {
+    query += " AND condition = 'used'";
+  }
+
+    if (minPrice) {
+    query += " AND price >= $" + (params.length + 1);
+    params.push(minPrice);
+  }
+  if (maxPrice) {
+    query += " AND price <= $" + (params.length + 1);
+    params.push(maxPrice);
+  }
+  
+
+  // Do nothing if none or all of the categories are selected (no filtering needed)
+  if (categories.length > 0 && categories.length < validCategories.length) {
+    query += " AND category = ANY($" + (params.length + 1) + ")"; // Select any of the checked categories
+    params.push(categories);
+  }
+  query += " ORDER BY time_posted DESC";
+  pool.query(query, params).then(result => {
+    res.json({rows: result.rows});
+  });
+});
 app.post("/register", async (req, res) => {
   try {
     const { studentId, firstName, lastName, email, phone, password } = req.body;
