@@ -94,3 +94,64 @@ router.get("/verify/:token", async (req, res) => {
 });
 
 module.exports = router;
+
+
+// POST /auth/login
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const q = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (q.rows.length === 0) return res.status(400).json({ message: "User not found." });
+
+    const user = q.rows[0];
+
+    // verify password
+    const ok = await argon2.verify(user.password, password);
+    if (!ok) return res.status(400).json({ message: "Incorrect password." });
+
+    if (!user.verified) return res.status(400).json({ message: "Please verify your email." });
+
+    // Create a random session token and store it
+    const token = crypto.randomBytes(32).toString("hex");
+    await pool.query("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", [token, user.id]);
+
+    // Set cookie. In development (localhost) set secure: false.
+    res.cookie("session", token, {
+      httpOnly: true,
+      secure: false,      // change to true in production with HTTPS
+      sameSite: "Strict",
+      path: "/"
+    });
+
+    // Return some user info (no password)
+    res.json({ message: "Login successful", user: { id: user.id, first_name: user.first_name, email: user.email } });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error during login." });
+  }
+});
+
+// POST /auth/logout
+router.post("/logout", async (req, res) => {
+  try {
+    const token = req.cookies.session;
+    if (token) {
+      await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
+    }
+    // Clear cookie
+    res.clearCookie("session", { path: "/" });
+    res.json({ message: "Logged out" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ message: "Server error during logout." });
+  }
+});
+
+// GET /auth/whoami  - tells the frontend who the current user is (based on cookie)
+router.get("/whoami", async (req, res) => {
+  if (!req.user) return res.json({ loggedIn: false });
+  return res.json({ loggedIn: true, user: req.user });
+});
+
+

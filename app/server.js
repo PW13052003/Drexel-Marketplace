@@ -8,6 +8,38 @@ app.use(express.json());
 const { v4: uuidv4 } = require('uuid');
 const fileUpload = require('express-fileupload');
 
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+
+// Middleware: attach req.user if a valid session cookie exists
+app.use(async (req, res, next) => {
+  try {
+    const token = req.cookies.session;
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+    const result = await pool.query(
+      "SELECT user_id FROM sessions WHERE token = $1",
+      [token]
+    );
+    if (result.rows.length === 0) {
+      req.user = null;
+      return next();
+    }
+    const userId = result.rows[0].user_id;
+    // optionally load a few user details
+    const userRow = await pool.query("SELECT id, first_name, email FROM users WHERE id = $1", [userId]);
+    req.user = userRow.rows[0] || null;
+    return next();
+  } catch (err) {
+    console.error("session middleware error:", err);
+    req.user = null;
+    return next();
+  }
+});
+
 
 // DM ROOM HELPER
 function getDMRoom(userA, userB) {
@@ -26,10 +58,6 @@ function getRoomId(user1, user2) {
   return `dm_${sorted[0]}_${sorted[1]}`;
 }
 
-console.log(getRoomId(5, 10));
-console.log(getRoomId(10, 5));
-console.log(getRoomId("20", "20"));
-console.log(getRoomId(88, 92));
 
 // Needed for uploading images to publoc/Images
 app.use(fileUpload({

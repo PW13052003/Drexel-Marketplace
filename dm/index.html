@@ -21,7 +21,19 @@
     <script>
       const socket = io();
       let roomId = null;
-      const username = prompt("Enter your name:");
+
+      async function getCurrentUser() {
+      const res = await fetch("/auth/whoami");
+      const data = await res.json();
+
+      if (!data.loggedIn) {
+        alert("Please log in first!");
+        window.location.href = "/login.html"; 
+        return null;
+      }
+      return data.user; // contains: { id, first_name, email }
+    }
+
 
       const roomInput = document.getElementById("roomInput");
       const joinBtn = document.getElementById("joinBtn");
@@ -40,39 +52,51 @@
 
       
       joinBtn.addEventListener("click", async () => {
-        const user1 = prompt("Enter your user ID:");
-        const user2 = prompt("Enter the other user's ID:");
+        const sellerId = parseInt(roomInput.value.trim(), 10);
 
-        // Get roomId from backend
-        const res = await fetch(`/dmRoom?user1=${user1}&user2=${user2}`);
-        const data = await res.json();
+        if (!sellerId) {
+          alert("Enter a seller ID");
+          return;
+        }
 
-        roomId = data.roomId;
+        const currentUser = await getCurrentUser();
+        if (!currentUser) return; // redirected
 
-        socket.emit("joinRoom", roomId);
-        alert(`Joined private chat room: ${roomId}`);
+        // request the DM room from server
+        const resp = await fetch(`/dmRoom?user1=${currentUser.id}&user2=${sellerId}`);
+        const { roomId } = await resp.json();
 
-        // Load history
+        console.log("Joined DM room:", roomId);
+
+        socket.emit("joinRoom", { roomId, userId: currentUser.id });
+
+        // Load old chat messages
         const history = await fetch(`/history/${roomId}`);
-        const messagesData = await history.json();
+        const msgs = await history.json();
 
-        messages.innerHTML = ""; // clear
-        messagesData.forEach((msg) => {
-          const item = document.createElement("li");
-          item.textContent = `${msg.sender}: ${msg.message}`;
-          messages.appendChild(item);
+        messages.innerHTML = "";
+        msgs.forEach(msg => {
+          const li = document.createElement("li");
+          li.textContent = `${msg.sender}: ${msg.message}`;
+          messages.appendChild(li);
         });
       });
 
 
+
       // Send chat message
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if (input.value && roomId) {
-          socket.emit("chat message", { roomId, message: input.value, sender: username });
-          input.value = "";
-        }
+        if (!roomId) return;
+        const currentUser = await getCurrentUser();
+        socket.emit("chat message", {
+          roomId,
+          message: input.value,
+          sender: currentUser.first_name, // or currentUser.id
+        });
+        input.value = "";
       });
+
 
       // Receive chat message
       socket.on("chat message", (data) => {
