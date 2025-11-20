@@ -89,7 +89,11 @@ let conditionOptions = ["new", "used"];
 app.post("/createPost", (req, res)=> {
   let title = "";
   let description = "";
-  let userID = 1; /* This is a placeholder until we set up authentication */
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
+
+  let userID = req.user.id;
   let date = "";
   let price = -1;
   let condition = "";
@@ -99,7 +103,6 @@ app.post("/createPost", (req, res)=> {
   if (
     req.body.hasOwnProperty("title") && 
     req.body.hasOwnProperty("description") &&
-    req.body.hasOwnProperty("userID") &&
     req.body.hasOwnProperty("date") &&
     req.body.hasOwnProperty("price") &&
     req.body.hasOwnProperty("condition") &&
@@ -173,6 +176,9 @@ app.post("/createPost", (req, res)=> {
 });
 
 app.post('/addImages', (req, res)=> {
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
   if (
     req.body.hasOwnProperty("postID") && 
     req.body.hasOwnProperty("paths")
@@ -193,6 +199,9 @@ app.post('/addImages', (req, res)=> {
 app.use("/Images", express.static(path.join(__dirname, "public/Images")));
 
 app.post('/uploadImages', (req, res) => {
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
     let images = req.files.images;
     let uploadedImages = [];
     // If there is no image, exit
@@ -222,6 +231,9 @@ app.post('/uploadImages', (req, res) => {
 });
 
 app.get("/getImages", (req,res) => { // gets the images for the given post id
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
   let postID = req.query.postID;
   if (!postID) {
     return res.status(400).json({ error: "postID is required" });
@@ -242,6 +254,9 @@ app.get("/getImages", (req,res) => { // gets the images for the given post id
 
 app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
 // the current user's posts. Automatically puts most recent posts first
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
   let titleText = req.query.titleText;
   let isNew = req.query.isNew;
   let isUsed = req.query.isUsed;
@@ -252,7 +267,7 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
   let isHome = req.query.isHome;
   let isFurniture = req.query.isFurniture;
   let isOther = req.query.isOther;
-  let userID = req.query.userID;
+  let userID = req.user.id;
 // server side price validation
   if(minPrice){
     if(isNaN(minPrice) || minPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(minPrice))
@@ -308,8 +323,9 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
     query += " AND category = ANY($" + (params.length + 1) + ")"; // Select any of the checked categories
     params.push(categories);
   }
-  query += " AND user_id != $" + (params.length + 1);
-  params.push(userID);
+  //query += " AND user_id != $" + (params.length + 1);
+  query += " AND sold = false";
+  //params.push(userID);
 
   query += " ORDER BY time_posted DESC";
   pool.query(query, params).then(result => {

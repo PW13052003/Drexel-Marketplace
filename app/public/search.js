@@ -13,7 +13,7 @@ let electronicsCheckbox = document.getElementById("electronics");
 let homeCheckbox = document.getElementById("home");
 let furnitureCheckbox = document.getElementById("furniture");
 let otherCheckbox = document.getElementById("other");
-
+let errorMessage = document.getElementById("errorMessage");
 let currentPosts = [];
 const postsPerPage = 5;
 let currentPage = 1;
@@ -42,9 +42,14 @@ function GetMostRecentPosts() {
     response.json().then(body => {
         console.log(body);
         currentPosts = body.rows;
-        numPages = Math.ceil(currentPosts.length / postsPerPage);
-        currentPage = 1;
-        displayPosts();
+        if(currentPosts.length != 0){
+            numPages = Math.ceil(currentPosts.length / postsPerPage);
+            currentPage = 1;
+            displayPosts();
+        }else{
+            errorMessage.textContent = "Currently no posts to display";
+        }
+        
         
         
     }).catch(error => {

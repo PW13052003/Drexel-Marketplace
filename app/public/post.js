@@ -2,12 +2,75 @@
     Client side code for posting
 */
 
+let verifiedLogin = false;
+function verify() {
+    return fetch("/auth/whoami")
+        .then(res => res.json())
+        .then(body => {
+            if (body.loggedIn) {
+                userID = body.user.id;
+                return true;
+            }
+            return false;
+        })
+        .catch(error => {
+            console.log("Verify error:", error);
+            return false;
+        });
+}
+verify().then(isLoggedIn => {
+    console.log("logged in?", isLoggedIn);
+    if(!isLoggedIn) {
+        window.location.href = "/login.html";
+        
+    }else{
+        verifiedLogin = true;
+    }
+});
+
+
+
+        
+    
 let submitButton = document.getElementById("submit");
 let titleInput = document.getElementById("title");
 let descriptionInput = document.getElementById("description");
 let priceInput = document.getElementById("price");
 let categoryInput = document.getElementById("category");
 let errorMessage = document.getElementById("errorMessage");
+let logoutButton = document.getElementById("logout");
+
+function logoutRequest() {
+    return fetch("/auth/logout",{
+    method:"POST",
+    }).then(response => {
+    console.log("Response received:", response.status);
+        if(response.status != 200){
+            console.log(response);
+            return false;
+        }else{
+            verifiedLogin = false; // while redirecting, do not let a logged out user press submit
+            return true;
+        }
+    })
+    .catch(error => {
+        console.log(error);
+        return false;
+    });
+
+    
+}
+function logout() {
+    logoutRequest().then(canLogout => { // once we know nothing went wrong logging out, redirect to login page
+    if(canLogout) {
+        window.location.href = "/login.html";
+    }
+    });
+}
+logoutButton.addEventListener("click", logout);
+
+    
+
 
 let imageInput = document.getElementById("images");
 let imagePreview = document.getElementById("preview");
@@ -27,6 +90,7 @@ function displayUploadedImages(){
 imageInput.addEventListener("change", displayUploadedImages);
 
 function submit(){
+    if(!verifiedLogin) {console.log("not logged in"); return;} // Do not submit until the login has been verified
     // If there are no images to upload skip this step
     if(imageInput.files.length === 0){addPost([]); return;}
     // First upload the images so we can put the paths to them in the database
@@ -99,7 +163,7 @@ function addPost(imagePaths){
         "Content-type": "application/json"
         },
         // TODO: once authentication is set up change the userID to get the current userID
-        body: JSON.stringify({title: title, description: description, userID: 1, 
+        body: JSON.stringify({title: title, description: description, 
             date: dateString, price: price, condition: condition, category: category}),
         }).then(response => {
         console.log("Response received:", response.status);
