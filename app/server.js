@@ -78,6 +78,7 @@ pool.connect().then(function () {
 
 const authRoutes = require("./routes/auth");
 const { title } = require("process");
+const { log } = require("console");
 app.use("/auth", authRoutes);
 
 
@@ -252,11 +253,98 @@ app.get("/getImages", (req,res) => { // gets the images for the given post id
     });
 });
 
+app.get("/viewprofile/:id", async (req, res) => { // use async because we are doing multiple queries that need to be
+  // completed before the next line of code runs
+  try {
+    if (!req.user) return res.status(401).json({ error: "Not logged in" });
+
+    const loggedInUserID = req.user.id;
+    const requestedUserID = req.params.id;
+
+    const userResult = await pool.query(
+      "SELECT first_name, last_name FROM users WHERE id = $1", // get the user's name to display at the top
+      [requestedUserID]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const postsResult = await pool.query(
+      "SELECT * FROM posts WHERE user_id = $1 ORDER BY time_posted DESC",
+      [requestedUserID]
+    );
+
+    let postHTML = '<div>';
+    postHTML += `<h1>${userResult.rows[0].first_name} ${userResult.rows[0].last_name}</h1>`;
+
+    // loop through posts
+    for (let post of postsResult.rows) {
+      postHTML += `<div id="${post.id}">`;
+      postHTML += `<h3>${post.title}</h3>`;
+      if(requestedUserID == loggedInUserID) {
+        postHTML += `<button onclick="deletePost(${post.id})">Delete</button>`; // Only add this when the user is viewing their own profile
+      }else{
+        postHTML += '<button>' + 'Purchase' + '</button>'; // TODO: something similar here with purchasing
+      }
+      postHTML += `<p>${post.time_posted.toISOString().slice(0, 10)}</p>`;
+      postHTML += `<p>Condition: ${post.condition}</p>`;
+
+      // get images for posts
+      const imagesResult = await pool.query(
+        "SELECT imagepath FROM images WHERE post_id = $1",
+        [post.id]
+      );
+      postHTML += '<div>';
+      for (let img of imagesResult.rows) {
+        postHTML += `<img src="${img.imagepath}" style="width:150px; margin:10px;">`;
+      }
+      postHTML += '</div>';
+
+      postHTML += `<p>Description: ${post.post_description}</p>`;
+      if(post.sold){
+        postHTML += '<p>Status: sold</p>';
+      }else{
+        postHTML += '<p>Status: for sale</p>';
+      }
+      
+      postHTML += '</div>';
+    }
+
+    postHTML += '</div>';
+    postHTML += '<script src="/deletePost.js"></script>'; // the script needed for post deletion
+    res.setHeader('Content-Type', 'text/html');
+    res.end(postHTML);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+app.post('/posts/:id/delete', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: "Not logged in" });
+
+  const postId = req.params.id;
+
+  pool.query("SELECT user_id FROM posts WHERE id = $1", [postId])
+    .then(result => {
+      if (result.rows.length === 0) return res.status(404).json({ error: "Post not found" });
+      if (result.rows[0].user_id != req.user.id) return res.status(403).json({ error: "Not authorized" });
+      return pool.query("DELETE FROM posts WHERE id = $1", [postId]);
+    })
+    .then(() => res.json({}))
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+});
+
 app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
 // the current user's posts. Automatically puts most recent posts first
   if (!req.user) {
         return res.status(401).json({ error: "Not logged in" });
   }
+  let userID = req.user.id;
   let titleText = req.query.titleText;
   let isNew = req.query.isNew;
   let isUsed = req.query.isUsed;
@@ -267,26 +355,26 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
   let isHome = req.query.isHome;
   let isFurniture = req.query.isFurniture;
   let isOther = req.query.isOther;
-  let userID = req.user.id;
+
 // server side price validation
   if(minPrice){
     if(isNaN(minPrice) || minPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(minPrice))
     || minPrice > 99999999.99) {
       console.log("invalid minPrice");
-      return res.status(400).json({});
+      return res.status(400).json({error: "invalid minPrice"});
     }
   }
   if(maxPrice){
     if(isNaN(maxPrice) || maxPrice < 0 || !(/^\d+\.\d{0,2}$|^\d+$|^\.\d{0,2}$/.test(maxPrice))
     || maxPrice > 99999999.99) {
       console.log("invalid maxPrice");
-      return res.status(400).json({});
+      return res.status(400).json({error: "invalid maxPrice"});
   }
   }
   if(minPrice && maxPrice){
     if(minPrice > maxPrice) {
     console.log("invalid price range");
-    return res.status(400).json({});
+    return res.status(400).json({error: "invalid price range"});
   }
   }
   
