@@ -1,3 +1,117 @@
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #1f2937;
+  margin: 0;
+  padding: 0;
+}
+
 textarea {
   resize: none;
+}
+
+/* Container for forms */
+.container {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 32px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+/* Form headings */
+h1, h2 {
+  text-align: center;
+  color: #111827;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+/* Form labels */
+label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+/* Form inputs (text, email, password, number, etc.) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Radio button styling */
+div input[type="radio"] {
+  margin-right: 5px;
+  margin-left: 15px;
+}
+div label {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+/* Form small text/helpers */
+small {
+  display: block;
+  font-size: 0.8rem;
+  color: #6b7281;
+  margin-top: -10px;
+  margin-bottom: 16px;
+}
+
+/* Main form button */
+button[type="submit"],
+#submit {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #2563eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button[type="submit"]:hover,
+#submit:hover {
+  background-color: #1d4ed8;
+}
+
+/* Error messages */
+#msg,
+#errorMessage {
+  text-align: center;
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-top: 16px;
 }

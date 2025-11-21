@@ -2,15 +2,43 @@ const pg = require("pg");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+
+
+// --- NEW: Add imports for chat server ---
+const http = require('http');
+const { Server } = require("socket.io");
+
+
 const app = express();
+
+// --- NEW: Create an HTTP server and wrap app ---
+const server = http.createServer(app);
+// --- NEW: Initialize Socket.io on that server ---
+const io = new Server(server);
+// --- END NEW ---
+
+
 const argon2 = require("argon2");
 app.use(express.json());
 const { v4: uuidv4 } = require('uuid');
 const fileUpload = require('express-fileupload');
 
+
+const pool = require("./db");
+
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+
+// --- NEW: Add a static path for the DM folder ---
+app.use('/dm', express.static(path.join(__dirname, '..', 'dm')));
+// --- END NEW ---
+
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/index.html'));
+});
 
 // Middleware: attach req.user if a valid session cookie exists
 app.use(async (req, res, next) => {
@@ -41,18 +69,6 @@ app.use(async (req, res, next) => {
 });
 
 
-// DM ROOM HELPER
-function getDMRoom(userA, userB) {
-  const a = Number(userA);
-  const b = Number(userB);
-
-  if (isNaN(a) || isNaN(b)) {
-    throw new Error("User IDs must be numbers for DM rooms.");
-  }
-
-  return a < b ? `dm_${a}_${b}` : `dm_${b}_${a}`;
-}
-
 function getRoomId(user1, user2) {
   const sorted = [Number(user1), Number(user2)].sort((a, b) => a - b);
   return `dm_${sorted[0]}_${sorted[1]}`;
@@ -68,21 +84,12 @@ app.use(express.urlencoded({ extended: true }));
 const port = 3000;
 const hostname = "localhost";
 
-const env = require("../env.json");
-const Pool = pg.Pool;
-const pool = new Pool(env);
-pool.connect().then(function () {
-  console.log(`Connected to database ${env.database}`);
-});
-
 
 const authRoutes = require("./routes/auth");
 const { title } = require("process");
 const { log } = require("console");
 app.use("/auth", authRoutes);
 
-
-app.use(express.static("public"));
 
 let validCategories = ["clothing", "electronics", "home", "furniture", "other"];
 let conditionOptions = ["new", "used"];
@@ -693,6 +700,76 @@ app.get("/reviews/eligibility/:post_id/:buyer_id", async (req, res) => {
 });
 
 
-app.listen(port, hostname, () => {
+
+
+
+// --- NEW: Add HTTP routes from dm/server.js ---
+
+app.get("/history/:roomId", async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT sender, message, timestamp FROM messages WHERE room_id = $1 ORDER BY timestamp ASC",
+      [roomId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).send("Server error fetching messages");
+  }
+});
+
+// Create or fetch DM room for two users
+app.get("/dmRoom", (req, res) => {
+  const { user1, user2 } = req.query;
+
+  if (!user1 || !user2) {
+    return res.status(400).json({ error: "Missing user parameters" });
+  }
+
+  // Uses the getRoomId function already in this file
+  const roomId = getRoomId(user1, user2); 
+  res.json({ roomId });
+});
+// --- END NEW ROUTES ---
+
+
+
+// --- NEW: Add Socket.io logic from dm/server.js ---
+io.on("connection", (socket) => {
+  console.log("A user connected to chat:", socket.id);
+
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+    console.log(`User ${socket.id} joined room ${roomId}`);
+  });
+
+  // When someone sends a message
+  socket.on("chat message", async ({ roomId, message, sender }) => {
+    console.log(`Message in ${roomId} from ${sender}: ${message}`);
+
+    // Save to database
+    try {
+      await pool.query(
+        "INSERT INTO messages (room_id, sender, message) VALUES ($1, $2, $3)",
+        [roomId, sender, message]
+      );
+    } catch (err) {
+      console.error("Error saving message:", err);
+    }
+
+    // Send message to all users in the same room
+    io.to(roomId).emit("chat message", { sender, message });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected from chat:", socket.id);
+  });
+});
+// --- END NEW SOCKET.IO LOGIC ---
+
+
+
+server.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
 });

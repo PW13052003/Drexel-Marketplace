@@ -19,7 +19,6 @@ function getRoomId(user1, user2) {
     : `dm_${uid2}_${uid1}`;
 }
 
-
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
@@ -37,6 +36,7 @@ app.get("/history/:roomId", async (req, res) => {
     res.status(500).send("Server error fetching messages");
   }
 });
+
 
 // Create or fetch DM room for two users
 app.get("/dmRoom", (req, res) => {
