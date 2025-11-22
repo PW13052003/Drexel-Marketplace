@@ -12,7 +12,20 @@ textarea {
 }
 
 /* Container for forms */
+/*
 .container {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 32px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+*/
+
+/* Container for forms */
+.form-container {
   max-width: 420px;
   margin: 40px auto;
   padding: 32px;
