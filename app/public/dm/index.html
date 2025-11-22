@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drexel Marketplace – Messages</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/style.css">
+
+  <script>
+    tailwind.config = {
+      theme: { extend: {} }
+    };
+  </script>
+</head>
+
+<body class="bg-gray-100">
+
+  <div class="bg-white shadow p-4">
+    <h1 class="text-2xl font-bold text-blue-800 text-center">Messages</h1>
+  </div>
+
+  <!-- Main Chat Container -->
+  <div class="max-w-3xl mx-auto mt-8 bg-white shadow-lg rounded-xl p-6">
+
+    <!-- Select user to message -->
+    <div>
+      <label class="font-semibold">Enter Seller/User ID to Message:</label>
+      <input id="targetUser" class="border p-2 rounded w-48 ml-2" placeholder="User ID">
+      <button id="startChat" class="bg-blue-700 text-white px-4 py-2 rounded ml-2 hover:bg-blue-800">
+        Start Chat
+      </button>
+    </div>
+
+    <!-- Chat Box -->
+    <div id="chatBox" class="hidden mt-6 border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50">
+      <ul id="messages" class="space-y-2"></ul>
+    </div>
+
+    <!-- Message Input -->
+    <form id="msgForm" class="hidden mt-4 flex">
+      <input id="msgInput" class="flex-grow border p-3 rounded-l-lg" placeholder="Type a message...">
+      <button class="bg-blue-700 text-white px-6 rounded-r-lg hover:bg-blue-800">Send</button>
+    </form>
+  </div>
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const socket = io();
+
+    let currentUser = null;  // { id, first_name, email }
+    let roomId = null;
+
+    // Runs on page load
+    window.addEventListener("DOMContentLoaded", async () => {
+      const who = await fetch("/auth/whoami");
+      const data = await who.json();
+
+      if (!data.loggedIn) {
+        alert("You must be logged in to view your messages.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      currentUser = data.user;
+      console.log("Logged in as:", currentUser);
+    });
+
+    // Start chat button
+    document.getElementById("startChat").addEventListener("click", async () => {
+      const targetId = parseInt(document.getElementById("targetUser").value);
+
+      if (!targetId) {
+        alert("Please enter a valid user ID.");
+        return;
+      }
+
+      if (targetId === currentUser.id) {
+        alert("You cannot message yourself.");
+        return;
+      }
+
+      // Request DM room
+      const res = await fetch(`/dmRoom?user1=${currentUser.id}&user2=${targetId}`);
+      const data = await res.json();
+      roomId = data.roomId;
+
+      // Show UI elements
+      document.getElementById("chatBox").classList.remove("hidden");
+      document.getElementById("msgForm").classList.remove("hidden");
+
+      // Join socket room
+      socket.emit("joinRoom", roomId);
+
+      // Load chat history
+      loadHistory();
+    });
+
+    async function loadHistory() {
+      const res = await fetch(`/history/${roomId}`);
+      const history = await res.json();
+
+      const msgList = document.getElementById("messages");
+      msgList.innerHTML = "";
+
+      history.forEach(msg => {
+        const item = document.createElement("li");
+        item.textContent = `${msg.sender}: ${msg.message}`;
+        msgList.appendChild(item);
+      });
+    }
+
+    // Send message
+    document.getElementById("msgForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const text = document.getElementById("msgInput").value;
+      if (!text) return;
+
+      socket.emit("chat message", { roomId, message: text, sender: currentUser.first_name });
+      document.getElementById("msgInput").value = "";
+    });
+
+    // Receive message
+    socket.on("chat message", (data) => {
+      const msgList = document.getElementById("messages");
+      const item = document.createElement("li");
+      item.textContent = `${data.sender}: ${data.message}`;
+      msgList.appendChild(item);
+      msgList.scrollTop = msgList.scrollHeight;
+    });
+  </script>
+</body>
+</html>
