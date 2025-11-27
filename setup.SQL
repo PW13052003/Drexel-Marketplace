@@ -53,6 +53,8 @@ CREATE TABLE purchases (
     id SERIAL PRIMARY KEY,
     post_id INTEGER NOT NULL,
     buyer_id INTEGER NOT NULL,
+    seller_id INTEGER NOT NULL,
+    completed BOOLEAN DEFAULT false,
     purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -75,7 +75,7 @@ function getRoomId(user1, user2) {
 }
 
 
-// Needed for uploading images to publoc/Images
+// Needed for uploading images to public/Images
 app.use(fileUpload({
     createParentPath: true
 }));
@@ -259,7 +259,23 @@ app.get("/getImages", (req,res) => { // gets the images for the given post id
       res.status(500).json({ error: "Server error" });
     });
 });
-
+app.get("/myPurchases", (req, res) => {
+  if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+  }
+  let userID = req.user.id;
+  pool.query("SELECT * FROM purchases WHERE buyer_id = $1", [userID])
+    .then(result => {
+      if (result.rows.length === 0) {
+        return res.json({ purchases: []});
+      }
+      res.json({ purchases: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+});
 app.get("/viewprofile/:id", async (req, res) => { // use async because we are doing multiple queries that need to be
   // completed before the next line of code runs
   try {
@@ -351,7 +367,7 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
   if (!req.user) {
         return res.status(401).json({ error: "Not logged in" });
   }
-  let userID = req.user.id;
+  let user_id = req.user.id;
   let titleText = req.query.titleText;
   let isNew = req.query.isNew;
   let isUsed = req.query.isUsed;
@@ -418,9 +434,9 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
     query += " AND category = ANY($" + (params.length + 1) + ")"; // Select any of the checked categories
     params.push(categories);
   }
-  //query += " AND user_id != $" + (params.length + 1);
+  query += " AND user_id != $" + (params.length + 1);
   query += " AND sold = false";
-  //params.push(userID);
+  params.push(user_id);
 
   query += " ORDER BY time_posted DESC";
   pool.query(query, params).then(result => {
@@ -459,8 +475,10 @@ app.post("/register", async (req, res) => {
 app.post("/purchase", async (req, res) => {
   try {
     const { post_id } = req.body;
+    
+    if (!req.user) return res.status(401).json({ error: "Not logged in" });
 
-    const buyer_id = 1;
+    const buyer_id = req.user.id;
 
     if (!post_id) {
       return res.status(400).json({ message: "post_id is required" });
@@ -491,15 +509,19 @@ app.post("/purchase", async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO purchases (post_id, buyer_id) VALUES ($1, $2);`,
-    )
+      `INSERT INTO purchases (post_id, buyer_id, seller_id) VALUES ($1, $2, $3);`, [post_id, buyer_id, seller_id]
+    );
+
+    await pool.query(
+      `UPDATE posts SET sold_to_id = $1, sold= true WHERE id = $2;`, [buyer_id, post_id]
+    );
     return res.status(200).json({ 
       message: "Purchase recorded successfully!",
       post_id,
       buyer_id
     });
   }
-
+ 
   catch (err) {
     console.error("Purchase error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -509,7 +531,10 @@ app.post("/purchase", async (req, res) => {
 app.post("/addReview", async (req, res) => {
   try {
     const { post_id, rating, review_text } = req.body;
-    const buyer_id = 1;
+    if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+    const buyer_id = req.user.id;
 
     if (!post_id) {
       return res.status(400).json({ message: "post_id is required" });
@@ -559,6 +584,10 @@ app.post("/addReview", async (req, res) => {
     await pool.query(
       `INSERT INTO reviews (post_id, buyer_id, rating, review_text) VALUES ($1, $2, $3, $4);`,
       [post_id, buyer_id, rating, review_text]
+    );
+
+    await pool.query(`UPDATE purchases SET completed = true WHERE post_id = $1;`,
+      [post_id]
     );
 
     return res.status(200).json({
@@ -646,10 +675,13 @@ app.get("/reviews/seller/:seller_id", async (req, res) => {
   }
 })
 
-app.get("/reviews/eligibility/:post_id/:buyer_id", async (req, res) => {
+app.get("/reviews/eligibility/:post_id", async (req, res) => {
   try {
-    const { post_id, buyer_id } = req.params;
-
+    if (!req.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+    const buyer_id = req.user.id;
+    const { post_id } = req.params;
     if (!post_id || !buyer_id) {
       return res.status(400).json({ message: "post_id and buyer_id are required" });
     }

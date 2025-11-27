@@ -1,13 +1,11 @@
-document.getElementById("loadBtn").addEventListener("click", loadPage);
-
-const buyer_id = 1;
-
+const urlParams = new URLSearchParams(window.location.search);
+const post_id = urlParams.get("post_id");
+loadPage();
 async function loadPage() {
-    const post_id = document.getElementById("postIdInput").ariaValueMax;
 
     if (!post_id) {
-        alert("Enter a post ID.");
-        return;
+        alert("Invalid Post ID.");
+        window.location.href = "index.html";
     }
 
     await checkEligibility(post_id);
@@ -17,7 +15,7 @@ async function loadPage() {
 async function checkEligibility(post_id) {
     const msg = document.getElementById("eligibilityMessage");
     const reviewSection = document.getElementById("reviewSection");
-    const response = await fetch(`/reviews/eligibility/${post_id}/${buyer_id}`);
+    const response = await fetch(`/reviews/eligibility/${post_id}`);
     const data = await response.json();
 
     if (!response.ok) {

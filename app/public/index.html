@@ -109,6 +109,16 @@
                                 Open Messages &rarr;
                             </a>
                         </div>
+                        <!-- Feature 5: Purchases (Logged-in only) -->
+                        <div id="purchases-card" class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300" style="display: none;">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">Your Purchases</h3>
+                            <p class="text-gray-600 mb-6">
+                                View items you have purchased and leave seller reviews..
+                            </p>
+                            <button onclick="goToMyPurchases()" class="text-blue-700 font-semibold hover:underline">
+                                View My Purchases &rarr;
+                            </button>
+                        </div>
 
                     </div>
                 </div>
@@ -132,7 +142,7 @@
             const sellCard = document.getElementById('sell-card');
             const profileCard = document.getElementById('profile-card');
             const messagesCard = document.getElementById('messages-card');
-            
+            const purchasesCard = document.getElementById('purchases-card');
             try {
                 // Check who is logged in
                 const res = await fetch('/auth/whoami');
@@ -148,6 +158,7 @@
                         <a href="/create_post.html" class="text-gray-600 hover:text-blue-700 font-medium">Sell</a>
                         <button onclick="goToProfile()" class="text-gray-600 hover:text-blue-700 font-medium">My Profile</button>
                         <a href="/dm/index.html" class="text-gray-600 hover:text-blue-700 font-medium">Messages</a>
+                        <button onclick="goToMyPurchases()" class="text-gray-600 hover:text-blue-700 font-medium">My Purchases</button>
                         <button onclick="logout()" class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800">
                             Logout
                         </button>
@@ -157,6 +168,7 @@
                     sellCard.style.display = 'block';
                     profileCard.style.display = 'block';
                     messagesCard.style.display = 'block';
+                    purchasesCard.style.display = 'block';
 
                 } else {
                     // --- User is LOGGED OUT ---
@@ -185,6 +197,10 @@
                 alert('Could not find user ID. Please log in again.');
                 window.location.href = '/login.html';
             }
+        }
+
+        function goToMyPurchases() {
+            window.location.href = `/purchases.html`;
         }
 
         // Function to log the user out

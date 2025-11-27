@@ -35,9 +35,9 @@ function GetMostRecentPosts() {
     let isFurniture = furnitureCheckbox.checked;
     let isOther = otherCheckbox.checked;
     
-    let userID = 2; // Placeholder
+
     let url = `/search?titleText=${titleText}&isNew=${isNew}&isUsed=${isUsed}&minPrice=${minPrice}&maxPrice=${maxPrice}&isClothing=
-    ${isClothing}&isElectronics=${isElectronics}&isHome=${isHome}&isFurniture=${isFurniture}&isOther=${isOther}&userID=${userID}`;
+    ${isClothing}&isElectronics=${isElectronics}&isHome=${isHome}&isFurniture=${isFurniture}&isOther=${isOther}`;
     fetch(url).then((response) => {
     response.json().then(body => {
         console.log(body);
@@ -63,7 +63,30 @@ function GetMostRecentPosts() {
     });
     
 }
+function goToProfile(userID) {
+    window.location.href = `/viewprofile/${userID}`;
+}
 
+function purchase(postID) {
+    fetch("/purchase",{
+        method:"POST",
+        headers: {
+        "Content-type": "application/json"
+        },
+        // TODO: once authentication is set up change the userID to get the current userID
+        body: JSON.stringify({ post_id: postID }),
+        }).then(response => {
+        console.log("Response received:", response.status);
+        return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            errorMessage.textContent = data.message;
+    
+        }).catch(error => {
+            console.log(error);
+        });
+}
 function displayPosts(){
     let startIndex = postsPerPage * (currentPage - 1);
     let endIndex = postsPerPage * (currentPage) - 1;
@@ -124,9 +147,11 @@ function displayPosts(){
         postDiv.append(desc);
         let purchaseBtn = document.createElement("button");
         purchaseBtn.textContent = "purchase";
+        purchaseBtn.addEventListener("click", () => purchase(post.id));
         postDiv.append(purchaseBtn);
         let profileBtn = document.createElement("button");
         profileBtn.textContent = "View seller profile";
+        profileBtn.addEventListener("click", () => goToProfile([post.user_id]));
         postDiv.append(profileBtn);
 
         
