@@ -300,7 +300,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
 
     let postHTML = '<div>';
     postHTML += `<h1>${userResult.rows[0].first_name} ${userResult.rows[0].last_name}</h1>`;
-
+    postHTML += '<p id="userRating"></p>';
     // loop through posts
     for (let post of postsResult.rows) {
       postHTML += `<div id="${post.id}">`;
@@ -334,8 +334,10 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
       
       postHTML += '</div>';
     }
-
+    postHTML += '<h2>Seller Reviews</h2>';
+    postHTML += '<div id="sellerReviews"></div>';
     postHTML += '</div>';
+    postHTML += '<script src=/getReviews.js></script>'; // script needed for grabbing seller reviews and adding them to div
     postHTML += '<script src="/deletePost.js"></script>'; // the script needed for post deletion
     res.setHeader('Content-Type', 'text/html');
     res.end(postHTML);
