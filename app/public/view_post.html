@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>View Post</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    
+</head>
+<body>
+<div id="postDiv">
+
+</div>
+
+<script type="module">
+    import { displayPost } from "./display_post.js";
+    let mainDiv = document.getElementById("postDiv");
+    const urlParams = new URLSearchParams(window.location.search);
+    const post_id = urlParams.get("post_id");
+    getPost(post_id);
+    function getPost(postID) {
+        if(!postID){
+            alert("Post not found");
+            window.location.href = '/search.html';
+        }
+        let url = `/getPost?post_id=${postID}`;
+            fetch(url).then((response) => {
+            response.json().then(body => {
+                let posts = body.posts;
+                if(posts.length === 0){
+                    alert("Post not found");
+                    window.location.href = '/search.html';
+                }else{
+                    let postDiv =displayPost(posts[0]);
+                    mainDiv.append(postDiv);
+                }
+                
+            }).catch(error => {
+                    // will be executed if attempt
+                    // to parse body as JSON crashes
+                    //message.textContent = "something went wrong";
+                    console.log("Inner error:", error);
+                    });
+            }).catch(error => {
+                console.log(error);
+            });
+    }
+</script>
+<script type="module" src="display_post.js"></script>
+</body>
+</html>

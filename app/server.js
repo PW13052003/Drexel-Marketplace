@@ -307,10 +307,11 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
       postHTML += `<h3>${post.title}</h3>`;
       if(requestedUserID == loggedInUserID) {
         postHTML += `<button onclick="deletePost(${post.id})">Delete</button>`; // Only add this when the user is viewing their own profile
-      }else{
-        postHTML += '<button>' + 'Purchase' + '</button>'; // TODO: something similar here with purchasing
       }
+      postHTML += `<button onclick="window.location.href='/view_post.html?post_id=${post.id}'">View Post</button>`;
+      
       postHTML += `<p>${post.time_posted.toISOString().slice(0, 10)}</p>`;
+      postHTML +=`<p>$${post.price}</p>`;
       postHTML += `<p>Condition: ${post.condition}</p>`;
 
       // get images for posts
@@ -361,7 +362,42 @@ app.post('/posts/:id/delete', (req, res) => {
       res.status(500).json({ error: "Server error" });
     });
 });
-
+app.get("/getPostTitle", (req, res) => {
+  let postID = req.query.post_id;
+  if (!postID) {
+    return res.status(400).json({ error: "postID is required" });
+  }
+  pool.query("SELECT title FROM posts WHERE id = $1", [postID])
+    .then(result => {
+      console.log(result);
+      if (result.rows.length === 0) {
+        return res.json({ titles: []});
+      }
+      res.json({ titles: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+})
+app.get("/getPost", (req, res) => {
+  let postID = req.query.post_id;
+  if (!postID) {
+    return res.status(400).json({ error: "postID is required" });
+  }
+  pool.query("SELECT * FROM posts WHERE id = $1", [postID])
+    .then(result => {
+      console.log(result);
+      if (result.rows.length === 0) {
+        return res.json({ posts: []});
+      }
+      res.json({ posts: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+})
 app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
 // the current user's posts. Automatically puts most recent posts first
   if (!req.user) {
