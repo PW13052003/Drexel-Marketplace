@@ -81,9 +81,9 @@ app.use(fileUpload({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-const port = 3000;
-const hostname = "localhost";
-
+//const port = 3000;
+//const hostname = "localhost";
+const PORT = process.env.PORT || 3000;
 
 const authRoutes = require("./routes/auth");
 const { title } = require("process");
@@ -839,7 +839,11 @@ io.on("connection", (socket) => {
 // --- END NEW SOCKET.IO LOGIC ---
 
 
-
+/*
 server.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
+});
+*/
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
