@@ -86,7 +86,8 @@ app.use(express.urlencoded({ extended: true }));
 
 //const port = 3000;
 //const hostname = "localhost";
-const PORT = process.env.PORT || 3000;
+//const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 const authRoutes = require("./routes/auth");
 const { title } = require("process");
@@ -847,6 +848,11 @@ server.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
 });
 */
+/*
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
+});
+*/
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
