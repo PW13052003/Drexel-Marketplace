@@ -95,6 +95,7 @@ function submit(){
     if(imageInput.files.length === 0){addPost([]); return;}
     // First upload the images so we can put the paths to them in the database
     const formData = new FormData();
+    if(imageInput.files.length > 5) {errorMessage.textContent = "Maximum images: 5"; return;};
     for (let file of imageInput.files) {
         formData.append("images", file);
     }

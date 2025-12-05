@@ -1,3 +1,5 @@
+import { displayPost } from './display_post.js';
+
 let postsDiv = document.getElementById("postDisplay");
 let searchBar = document.getElementById("searchBar");
 let submitButton = document.getElementById("submit");
@@ -63,30 +65,8 @@ function GetMostRecentPosts() {
     });
     
 }
-function goToProfile(userID) {
-    window.location.href = `/viewprofile/${userID}`;
-}
 
-function purchase(postID) {
-    fetch("/purchase",{
-        method:"POST",
-        headers: {
-        "Content-type": "application/json"
-        },
-        // TODO: once authentication is set up change the userID to get the current userID
-        body: JSON.stringify({ post_id: postID }),
-        }).then(response => {
-        console.log("Response received:", response.status);
-        return response.json();
-        })
-        .then(data => {
-            console.log(data);
-            errorMessage.textContent = data.message;
-    
-        }).catch(error => {
-            console.log(error);
-        });
-}
+
 function displayPosts(){
     let startIndex = postsPerPage * (currentPage - 1);
     let endIndex = postsPerPage * (currentPage) - 1;
@@ -102,58 +82,8 @@ function displayPosts(){
         postsDiv.append(pageNav);
     for(let currentIndex = startIndex; currentIndex <= endIndex; currentIndex++){
         let post = currentPosts[currentIndex];
-        let postDiv = document.createElement("div");
-        postDiv.id = post.id;
-        let postTitle = document.createElement("h3");
-        postTitle.textContent = post.title;
-        postDiv.append(postTitle);
+        let postDiv = displayPost(post, true);
         postsDiv.append(postDiv);
-
-        let timePosted = document.createElement("p");
-        timePosted.textContent = post.time_posted.slice(0, 10);
-        postDiv.append(timePosted);
-        let imageDiv = document.createElement("div");
-
-        let conditionDesc = document.createElement("p");
-        conditionDesc.textContent = "Condition: " + post.condition;
-        postDiv.append(conditionDesc);
-        
-        let url = `/getImages?postID=${post.id}`;
-        fetch(url).then((response) => {
-        response.json().then(body => {
-            let imagePaths = body.images;
-            for(let path of imagePaths){
-                const img = document.createElement("img");
-                img.src = path.imagepath;
-                img.style.width = "150px";
-                img.style.margin = "10px";
-                imageDiv.append(img);
-            }
-            
-            
-            
-        }).catch(error => {
-                // will be executed if attempt
-                // to parse body as JSON crashes
-                //message.textContent = "something went wrong";
-                console.log("Inner error:", error);
-                });
-        }).catch(error => {
-            console.log(error);
-        });
-        postDiv.append(imageDiv);
-        let desc = document.createElement("p");
-        desc.textContent = post.post_description;
-        postDiv.append(desc);
-        let purchaseBtn = document.createElement("button");
-        purchaseBtn.textContent = "purchase";
-        purchaseBtn.addEventListener("click", () => purchase(post.id));
-        postDiv.append(purchaseBtn);
-        let profileBtn = document.createElement("button");
-        profileBtn.textContent = "View seller profile";
-        profileBtn.addEventListener("click", () => goToProfile([post.user_id]));
-        postDiv.append(profileBtn);
-
         
     }    
     let pageNavBottom = document.createElement("div");

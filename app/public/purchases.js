@@ -15,6 +15,10 @@ function goToProfile(userID) {
 function reviewSeller(postID) {
     window.location.href = `rate.html?post_id=${postID}`;
 }
+
+function goToPost(postID) {
+    window.location.href = `view_post.html?post_id=${postID}`;
+}
 function displayCurrentPurchases() {
     numPagesCurrent = Math.ceil(currentPurchases.length / purchasesPerPage);
     currentPage = 1;
@@ -34,14 +38,42 @@ function displayCurrentPurchases() {
         let purchase = currentPurchases[currentIndex];
         console.log(purchase);
         let purchaseDiv = document.createElement("div");
-        let profileBtn = document.createElement("button");
-        profileBtn.textContent = "View seller profile";
-        profileBtn.addEventListener("click", () => goToProfile(purchase.seller_id));
-        purchaseDiv.append(profileBtn);
-        let reviewBtn = document.createElement("button");
-        reviewBtn.textContent = "Review Seller";
-        reviewBtn.addEventListener("click", () => reviewSeller(purchase.post_id));
-        purchaseDiv.append(reviewBtn);
+        let url = `/getPostTitle?post_id=${purchase.post_id}`;
+        fetch(url).then((response) => {
+            response.json().then(body => {
+                let titles = body.titles;
+                if(titles.length > 0){
+                    let titleHeader = document.createElement("h3");
+                    titleHeader.textContent = titles[0].title;
+                    purchaseDiv.append(titleHeader);
+
+                    let profileBtn = document.createElement("button");
+                    profileBtn.textContent = "View seller profile";
+                    profileBtn.addEventListener("click", () => goToProfile(purchase.seller_id));
+                    purchaseDiv.append(profileBtn);
+                    
+                    let reviewBtn = document.createElement("button");
+                    reviewBtn.textContent = "Review Seller";
+                    reviewBtn.addEventListener("click", () => reviewSeller(purchase.post_id));
+                    purchaseDiv.append(reviewBtn);
+
+                    let viewPostBtn = document.createElement("button");
+                    viewPostBtn.textContent="View Post";
+                    viewPostBtn.addEventListener("click", () => goToPost([purchase.post_id]));
+                    purchaseDiv.append(viewPostBtn);
+                }
+                
+            }).catch(error => {
+                    // will be executed if attempt
+                    // to parse body as JSON crashes
+                    //message.textContent = "something went wrong";
+                    console.log("Inner error:", error);
+                    });
+            }).catch(error => {
+                console.log(error);
+            });
+        
+
         currentPurchasesDiv.append(purchaseDiv);
     }
 }
@@ -66,10 +98,37 @@ function displayCompletedPurchases() {
         let purchase = completedPurchases[currentIndex];
         console.log(purchase);
         let purchaseDiv = document.createElement("div");
-        let profileBtn = document.createElement("button");
-        profileBtn.textContent = "View seller profile";
-        profileBtn.addEventListener("click", () => goToProfile(purchase.seller_id));
-        purchaseDiv.append(profileBtn);
+        let url = `/getPostTitle?post_id=${purchase.post_id}`;
+            fetch(url).then((response) => {
+            response.json().then(body => {
+                let titles = body.titles;
+                console.log(titles);
+                if(titles.length > 0){
+                    let titleHeader = document.createElement("h3");
+                    titleHeader.textContent = titles[0].title;
+                    purchaseDiv.append(titleHeader);
+                    let profileBtn = document.createElement("button");
+                    profileBtn.textContent = "View seller profile";
+                    profileBtn.addEventListener("click", () => goToProfile(purchase.seller_id));
+                    purchaseDiv.append(profileBtn);
+
+                    let viewPostBtn = document.createElement("button");
+                    viewPostBtn.textContent="View Post";
+                    viewPostBtn.addEventListener("click", () => goToPost([purchase.post_id]));
+                    purchaseDiv.append(viewPostBtn);
+                }
+                
+            }).catch(error => {
+                    // will be executed if attempt
+                    // to parse body as JSON crashes
+                    //message.textContent = "something went wrong";
+                    console.log("Inner error:", error);
+                    });
+            }).catch(error => {
+                console.log(error);
+            });
+        
+
         completedPurchasesDiv.append(purchaseDiv);
     }
 }

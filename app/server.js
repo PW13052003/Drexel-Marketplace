@@ -20,7 +20,10 @@ const io = new Server(server);
 
 const argon2 = require("argon2");
 app.use(express.json());
-const { v4: uuidv4 } = require('uuid');
+
+//const { v4: uuidv4 } = require('uuid');
+const uuidv4 = (...args) => import('uuid').then(({ v4 }) => v4(...args));
+
 const fileUpload = require('express-fileupload');
 
 
@@ -81,9 +84,10 @@ app.use(fileUpload({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-const port = 3000;
-const hostname = "localhost";
-
+//const port = 3000;
+//const hostname = "localhost";
+//const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 const authRoutes = require("./routes/auth");
 const { title } = require("process");
@@ -315,18 +319,20 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
       `;
     }
 
-    
+    postHTML += '<p id="userRating"></p>';
 
+    
     // loop through posts
     for (let post of postsResult.rows) {
       postHTML += `<div id="${post.id}">`;
       postHTML += `<h3>${post.title}</h3>`;
       if(requestedUserID == loggedInUserID) {
         postHTML += `<button onclick="deletePost(${post.id})">Delete</button>`; // Only add this when the user is viewing their own profile
-      }else{
-        postHTML += '<button>' + 'Purchase' + '</button>'; // TODO: something similar here with purchasing
       }
+      postHTML += `<button onclick="window.location.href='/view_post.html?post_id=${post.id}'">View Post</button>`;
+      
       postHTML += `<p>${post.time_posted.toISOString().slice(0, 10)}</p>`;
+      postHTML +=`<p>$${post.price}</p>`;
       postHTML += `<p>Condition: ${post.condition}</p>`;
 
       // get images for posts
@@ -349,8 +355,10 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
       
       postHTML += '</div>';
     }
-
+    postHTML += '<h2>Seller Reviews</h2>';
+    postHTML += '<div id="sellerReviews"></div>';
     postHTML += '</div>';
+    postHTML += '<script src=/getReviews.js></script>'; // script needed for grabbing seller reviews and adding them to div
     postHTML += '<script src="/deletePost.js"></script>'; // the script needed for post deletion
     res.setHeader('Content-Type', 'text/html');
     res.end(postHTML);
@@ -377,7 +385,42 @@ app.post('/posts/:id/delete', (req, res) => {
       res.status(500).json({ error: "Server error" });
     });
 });
-
+app.get("/getPostTitle", (req, res) => {
+  let postID = req.query.post_id;
+  if (!postID) {
+    return res.status(400).json({ error: "postID is required" });
+  }
+  pool.query("SELECT title FROM posts WHERE id = $1", [postID])
+    .then(result => {
+      console.log(result);
+      if (result.rows.length === 0) {
+        return res.json({ titles: []});
+      }
+      res.json({ titles: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+})
+app.get("/getPost", (req, res) => {
+  let postID = req.query.post_id;
+  if (!postID) {
+    return res.status(400).json({ error: "postID is required" });
+  }
+  pool.query("SELECT * FROM posts WHERE id = $1", [postID])
+    .then(result => {
+      console.log(result);
+      if (result.rows.length === 0) {
+        return res.json({ posts: []});
+      }
+      res.json({ posts: result.rows });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    });
+})
 app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
 // the current user's posts. Automatically puts most recent posts first
   if (!req.user) {
@@ -817,7 +860,16 @@ io.on("connection", (socket) => {
 // --- END NEW SOCKET.IO LOGIC ---
 
 
-
+/*
 server.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
+});
+*/
+/*
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+*/
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
