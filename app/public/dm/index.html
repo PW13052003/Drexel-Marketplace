@@ -19,20 +19,12 @@
 
   <div class="bg-white shadow p-4">
     <h1 class="text-2xl font-bold text-blue-800 text-center">Messages</h1>
-  </div>
+    <p id="chat-title" class="text-center text-gray-500"></p>
+</div>
+
 
   <!-- Main Chat Container -->
   <div class="max-w-3xl mx-auto mt-8 bg-white shadow-lg rounded-xl p-6">
-
-    <!-- Select user to message -->
-    <div>
-      <label class="font-semibold">Enter Seller/User ID to Message:</label>
-      <input id="targetUser" class="border p-2 rounded w-48 ml-2" placeholder="User ID">
-      <button id="startChat" class="bg-blue-700 text-white px-4 py-2 rounded ml-2 hover:bg-blue-800">
-        Start Chat
-      </button>
-    </div>
-
     <!-- Chat Box -->
     <div id="chatBox" class="hidden mt-6 border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50">
       <ul id="messages" class="space-y-2"></ul>
@@ -54,6 +46,10 @@
     let currentUser = null;  // { id, first_name, email }
     let roomId = null;
 
+    // Read user from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const user2 = parseInt(urlParams.get("user2"));
+
     // Runs on page load
     window.addEventListener("DOMContentLoaded", async () => {
       const who = await fetch("/auth/whoami");
@@ -66,29 +62,31 @@
       }
 
       currentUser = data.user;
-      console.log("Logged in as:", currentUser);
-    });
-
-    // Start chat button
-    document.getElementById("startChat").addEventListener("click", async () => {
-      const targetId = parseInt(document.getElementById("targetUser").value);
-
-      if (!targetId) {
-        alert("Please enter a valid user ID.");
+      if (!user2) {
+        alert("Missing ?user2= in URL.");
         return;
       }
 
-      if (targetId === currentUser.id) {
+      if (user2 === currentUser.id) {
         alert("You cannot message yourself.");
         return;
       }
 
-      // Request DM room
+      document.getElementById("chat-title").innerText =
+        `Chat between You (${currentUser.id}) and User ${user2}`;
+
+      startChatWith(user2);
+    });
+
+    // Automatically start chat
+    async function startChatWith(targetId) {
+
+      // Request DM room from server
       const res = await fetch(`/dmRoom?user1=${currentUser.id}&user2=${targetId}`);
       const data = await res.json();
       roomId = data.roomId;
 
-      // Show UI elements
+      // Show chat UI
       document.getElementById("chatBox").classList.remove("hidden");
       document.getElementById("msgForm").classList.remove("hidden");
 
@@ -97,7 +95,7 @@
 
       // Load chat history
       loadHistory();
-    });
+    }
 
     async function loadHistory() {
       const res = await fetch(`/history/${roomId}`);

@@ -301,6 +301,22 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
     let postHTML = '<div>';
     postHTML += `<h1>${userResult.rows[0].first_name} ${userResult.rows[0].last_name}</h1>`;
 
+
+
+    // If the logged-in user is not viewing their own profile, show "Message Seller" button
+    if (requestedUserID != loggedInUserID) {
+      postHTML += `
+        <div style="margin:10px 0;">
+          <a href="/dm/index.html?user2=${requestedUserID}" 
+            class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800">
+            Message Seller
+          </a>
+        </div>
+      `;
+    }
+
+    
+
     // loop through posts
     for (let post of postsResult.rows) {
       postHTML += `<div id="${post.id}">`;
