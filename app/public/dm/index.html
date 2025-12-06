@@ -107,13 +107,31 @@
 
         data.forEach(c => {
           const li = document.createElement("li");
-          li.className = "p-3 border rounded hover:bg-gray-100 cursor-pointer";
 
-          li.textContent = `${c.otherUserName}`;
+          li.className =
+            "flex items-center p-3 border rounded-lg cursor-pointer transition hover:bg-gray-100";
+
+          const initials = c.otherUserName
+            .split(" ")
+            .map(w => w[0])
+            .join("")
+            .toUpperCase();
+
+          li.innerHTML = `
+            <div class="w-12 h-12 bg-blue-700 text-white rounded-full flex items-center justify-center text-lg font-bold mr-3">
+              ${initials}
+            </div>
+            <div class="flex flex-col">
+              <span class="font-semibold text-gray-800">${c.otherUserName}</span>
+              <span class="text-sm text-gray-500">Click to open chat</span>
+            </div>
+          `;
+
           li.onclick = () => startChatWith(c.otherUserId);
 
           list.appendChild(li);
         });
+
       }
   }
 
