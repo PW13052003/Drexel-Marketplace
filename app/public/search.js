@@ -96,6 +96,5 @@ function displayPosts(){
         }
         postsDiv.append(pageNavBottom);
 }
-
 GetMostRecentPosts();
 submitButton.addEventListener("click", GetMostRecentPosts);

@@ -241,9 +241,6 @@ app.post('/uploadImages', (req, res) => {
 });
 
 app.get("/getImages", (req,res) => { // gets the images for the given post id
-  if (!req.user) {
-        return res.status(401).json({ error: "Not logged in" });
-  }
   let postID = req.query.postID;
   if (!postID) {
     return res.status(400).json({ error: "postID is required" });
@@ -421,10 +418,12 @@ app.get("/getPost", (req, res) => {
 })
 app.get("/search", (req, res) => { // search for posts given filters. Automatically excludes
 // the current user's posts. Automatically puts most recent posts first
-  if (!req.user) {
-        return res.status(401).json({ error: "Not logged in" });
+ let user_id = -1; 
+  if (req.user) {
+    user_id = req.user.id;
+        //return res.status(401).json({ error: "Not logged in" });
   }
-  let user_id = req.user.id;
+  //let user_id = req.user.id;
   let titleText = req.query.titleText;
   let isNew = req.query.isNew;
   let isUsed = req.query.isUsed;
@@ -533,7 +532,7 @@ app.post("/purchase", async (req, res) => {
   try {
     const { post_id } = req.body;
     
-    if (!req.user) return res.status(401).json({ error: "Not logged in" });
+    if (!req.user) return res.status(401).json({ message: "Not logged in" });
 
     const buyer_id = req.user.id;
 
