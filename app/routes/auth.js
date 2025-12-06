@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const pool = require("../db"); 
 const router = express.Router();
-const env = require("../env.json");
+const env = require("../../env.json");
 const argon2 = require("argon2");
 
 // --- Checks if the email is already in use, creates a verification token, inserts the new user, and sends the email ---
