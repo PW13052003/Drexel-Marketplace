@@ -64,4 +64,15 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE dm_rooms (
+    room_id VARCHAR(50) PRIMARY KEY,
+    user1 INTEGER NOT NULL REFERENCES users(id),
+    user2 INTEGER NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Prevent duplicate rooms and enforce consistent ordering
+ALTER TABLE dm_rooms
+ADD CONSTRAINT unique_user_pair UNIQUE (user1, user2);
+
 

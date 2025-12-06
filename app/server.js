@@ -4,18 +4,18 @@ const cors = require("cors");
 const path = require("path");
 
 
-// --- NEW: Add imports for chat server ---
+// Add imports for chat server
 const http = require('http');
 const { Server } = require("socket.io");
 
 
 const app = express();
 
-// --- NEW: Create an HTTP server and wrap app ---
+// Create an HTTP server and wrap app
 const server = http.createServer(app);
-// --- NEW: Initialize Socket.io on that server ---
+// Initialize Socket.io on that server
 const io = new Server(server);
-// --- END NEW ---
+
 
 
 const argon2 = require("argon2");
@@ -33,10 +33,8 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-
-// --- NEW: Add a static path for the DM folder ---
+// Add a static path for the DM folder
 app.use('/dm', express.static(path.join(__dirname, '..', 'dm')));
-// --- END NEW ---
 
 
 app.get('/', (req, res) => {
@@ -321,7 +319,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
 
     postHTML += '<p id="userRating"></p>';
 
-    
+
     // loop through posts
     for (let post of postsResult.rows) {
       postHTML += `<div id="${post.id}">`;
@@ -794,7 +792,7 @@ app.get("/reviews/eligibility/:post_id", async (req, res) => {
 
 
 
-// --- NEW: Add HTTP routes from dm/server.js ---
+// HTTP routes from dm/server.js
 
 app.get("/history/:roomId", async (req, res) => {
   const { roomId } = req.params;
@@ -811,22 +809,42 @@ app.get("/history/:roomId", async (req, res) => {
 });
 
 // Create or fetch DM room for two users
-app.get("/dmRoom", (req, res) => {
+app.get("/dmRoom", async (req, res) => {
   const { user1, user2 } = req.query;
 
   if (!user1 || !user2) {
     return res.status(400).json({ error: "Missing user parameters" });
   }
 
-  // Uses the getRoomId function already in this file
-  const roomId = getRoomId(user1, user2); 
-  res.json({ roomId });
+  const roomId = getRoomId(user1, user2);
+
+  try {
+    // Check if the room already exists
+    const existing = await pool.query(
+      "SELECT room_id FROM dm_rooms WHERE room_id = $1",
+      [roomId]
+    );
+
+    // If it doesn't exist, insert it
+    if (existing.rows.length === 0) {
+      await pool.query(
+        "INSERT INTO dm_rooms (room_id, user1, user2) VALUES ($1, $2, $3)",
+        [roomId, user1, user2]
+      );
+      console.log("Created new DM room:", roomId);
+    } else {
+      console.log("DM room already exists:", roomId);
+    }
+
+    res.json({ roomId });
+
+  } catch (err) {
+    console.error("Error creating DM room:", err);
+    res.status(500).json({ error: "Server error creating DM room" });
+  }
 });
-// --- END NEW ROUTES ---
 
-
-
-// --- NEW: Add Socket.io logic from dm/server.js ---
+// Added Socket.io logic from dm/server.js
 io.on("connection", (socket) => {
   console.log("A user connected to chat:", socket.id);
 
@@ -857,8 +875,109 @@ io.on("connection", (socket) => {
     console.log("User disconnected from chat:", socket.id);
   });
 });
-// --- END NEW SOCKET.IO LOGIC ---
 
+app.get("/dm/myRooms", async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+
+  const myId = req.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+         room_id,
+         CASE 
+           WHEN user1 = $1 THEN user2
+           ELSE user1
+         END AS other_user_id
+       FROM dm_rooms
+       WHERE user1 = $1 OR user2 = $1`,
+      [myId]
+    );
+
+    // If no rooms, return empty
+    if (result.rows.length === 0) {
+      return res.json([]);
+    }
+
+    // Get names of all other users
+    const otherUserIds = result.rows.map(r => r.other_user_id);
+    
+    const names = await pool.query(
+      `SELECT id, first_name, last_name 
+       FROM users 
+       WHERE id = ANY($1)`,
+      [otherUserIds]
+    );
+
+    // Convert to map for quick lookup
+    const nameMap = {};
+    names.rows.forEach(u => {
+      nameMap[u.id] = `${u.first_name} ${u.last_name}`;
+    });
+
+    // Build final response
+    const conversations = result.rows.map(r => ({
+      roomId: r.room_id,
+      otherUserId: r.other_user_id,
+      otherUserName: nameMap[r.other_user_id] || "Unknown User"
+    }));
+
+    res.json(conversations);
+
+  } catch (err) {
+    console.error("Error loading DM rooms:", err);
+    res.status(500).json({ error: "Server error loading DM rooms" });
+  }
+});
+
+// List all DM conversations for logged-in user
+app.get("/dm/list", async (req, res) => {
+  if (!req.user) return res.json([]);
+
+  const userId = req.user.id;
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        room_id,
+        CASE 
+          WHEN user1 = $1 THEN user2
+          ELSE user1
+        END AS other_user_id
+      FROM dm_rooms
+      WHERE user1 = $1 OR user2 = $1
+      ORDER BY created_at DESC
+    `, [userId]);
+
+    if (result.rows.length === 0) return res.json([]);
+
+    const otherIds = result.rows.map(r => r.other_user_id);
+
+    const users = await pool.query(
+      `SELECT id, first_name, last_name FROM users WHERE id = ANY($1)`,
+      [otherIds]
+    );
+
+    const map = {};
+    users.rows.forEach(u => {
+      map[u.id] = `${u.first_name} ${u.last_name}`;
+    });
+
+    const formatted = result.rows.map(r => ({
+      roomId: r.room_id,
+      otherUserId: r.other_user_id,
+      otherUserName: map[r.other_user_id] || "Unknown User"
+    }));
+
+    res.json(formatted);
+
+  } catch (err) {
+    console.error("Error loading DM list:", err);
+    res.status(500).json({ error: "Failed to load conversations" });
+  }
+});
 
 /*
 server.listen(port, hostname, () => {
