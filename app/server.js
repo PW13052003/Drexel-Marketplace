@@ -185,25 +185,33 @@ app.post("/createPost", (req, res)=> {
   
 });
 
-app.post('/addImages', (req, res)=> {
+app.post('/addImages', async (req, res) => {
   if (!req.user) {
-        return res.status(401).json({ error: "Not logged in" });
+    return res.status(401).json({ error: "Not logged in" });
   }
-  if (
-    req.body.hasOwnProperty("postID") && 
-    req.body.hasOwnProperty("paths")
-  ) {
-    let postID = req.body.postID;
-    let paths = req.body.paths;
-    for(let path of paths) {
-      pool.query(`INSERT INTO images (post_id, imagePath)
-        VALUES($1, $2)`,
-      [postID, path]);
-    }
-    return res.status(200).json({});
-  }else{
+  
+  if (!req.body.postID || !req.body.paths) {
     console.log("Missing a required field");
-    return res.status(400).json({});
+    return res.status(400).json({ error: "Missing required field" });
+  }
+  
+  const postID = req.body.postID;
+  const paths = req.body.paths;
+  
+  try {
+    // Insert all images
+    for (let path of paths) {
+      await pool.query(
+        `INSERT INTO images (post_id, imagePath) VALUES($1, $2)`,
+        [postID, path]
+      );
+    }
+    
+    return res.status(200).json({ success: true });
+    
+  } catch (err) {
+    console.error("Database error:", err);
+    return res.status(500).json({ error: "Database error" });
   }
 });
 //app.use("/Images", express.static(path.join(__dirname, "public/Images")));
