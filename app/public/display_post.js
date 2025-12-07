@@ -62,6 +62,7 @@ export function displayPost(post, isSearchPage) {
         .then(response => response.json())
         .then(body => {
             let imagePaths = body.images;
+            console.log(imagePaths);
             for (let path of imagePaths) {
                 const img = document.createElement("img");
                 img.src = path.imagepath;
