@@ -186,6 +186,7 @@ app.post("/createPost", (req, res)=> {
 });
 
 app.post('/addImages', async (req, res) => {
+  console.log("adding images");
   if (!req.user) {
     return res.status(401).json({ error: "Not logged in" });
   }
@@ -201,6 +202,7 @@ app.post('/addImages', async (req, res) => {
   try {
     // Insert all images
     for (let path of paths) {
+      console.log("adding ", path);
       await pool.query(
         `INSERT INTO images (post_id, imagePath) VALUES($1, $2)`,
         [postID, path]
@@ -217,6 +219,7 @@ app.post('/addImages', async (req, res) => {
 //app.use("/Images", express.static(path.join(__dirname, "public/Images")));
 app.use('/Images', express.static('/data'));
 app.post('/uploadImages', async (req, res) => {
+  console.log("uploading images");
   if (!req.user) {
     return res.status(401).json({ error: "Not logged in" });
   }
