@@ -27,7 +27,7 @@ RUN npm ci
 # Copy application code
 COPY . .
 
-COPY env.json ./env.json
+#COPY env.json ./env.json
 # Final stage for app image
 FROM base
 
@@ -37,3 +37,5 @@ COPY --from=build /app /app
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 8080
 CMD [ "npm", "run", "start" ]
+
+RUN apt-get update && apt-get install -y postgresql-client

@@ -5,6 +5,7 @@
   "main": "db.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "psql \"$DATABASE_URL\" -f setup.sql",
     "start": "node app/server.js"
   },
   "keywords": [],
