@@ -2,6 +2,7 @@
 const pg = require("pg");
 const env = require("../env.json");
 
+const client = new pg.Client({connectionString: process.env.DATABASE_URL});
 
 const Pool = pg.Pool;
 const pool = new Pool(env);
