@@ -240,7 +240,7 @@ app.post('/uploadImages', async (req, res) => {
       const ext = path.extname(image.name);
       // unique filename
       const filename = uuidv4() + ext;
-      
+      console.log(filename);
 
       await image.mv(path.join('/data', filename));
       
