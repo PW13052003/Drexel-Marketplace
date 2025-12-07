@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for drexel-marketplace on 2025-12-07T02:00:21Z
+# fly.toml app configuration file generated for drexel-marketplace-jjlraa on 2025-12-07T02:23:27Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'drexel-marketplace'
-primary_region = 'lhr'
+app = 'drexel-marketplace-jjlraa'
+primary_region = 'iad'
 
 [build]
 
