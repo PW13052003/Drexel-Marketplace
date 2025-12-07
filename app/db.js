@@ -1,4 +1,4 @@
-/*
+
 const pg = require("pg");
 const env = require("../env.json");
 
@@ -11,7 +11,8 @@ pool.connect()
   .catch(err => console.error("Database connection error:", err));
 
 module.exports = pool;
-*/
+
+/*
 const { Pool } = require("pg");
 
 const pool = new Pool({
@@ -24,3 +25,4 @@ pool.connect()
   .catch(err => console.error("Database connection error:", err));
 
 module.exports = pool;
+*/
