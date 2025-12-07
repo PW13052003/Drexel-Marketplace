@@ -236,8 +236,8 @@ app.post('/uploadImages', async (req, res) => {
 
     for(let image of images){
       if (!/^image/.test(image.mimetype)) return res.sendStatus(400);
-      
-      const ext = path.extname(image.name);
+      const name = await image.name;
+      const ext = path.extname(name);
       // unique filename
       const filename = uuidv4() + ext;
       console.log(filename);
