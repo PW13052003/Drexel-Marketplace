@@ -1,11 +1,14 @@
 
 const pg = require("pg");
 const env = require("../env.json");
-
-const client = new pg.Client({connectionString: process.env.DATABASE_URL});
-
+/*
 const Pool = pg.Pool;
 const pool = new Pool(env);
+*/
+const Pool = pg.Pool;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 pool.connect()
   .then(() => console.log(`Connected to database: ${env.database}`))
