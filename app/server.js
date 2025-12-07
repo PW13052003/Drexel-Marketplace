@@ -208,38 +208,40 @@ app.post('/addImages', (req, res)=> {
 });
 app.use("/Images", express.static(path.join(__dirname, "public/Images")));
 
-app.post('/uploadImages', (req, res) => {
+app.post('/uploadImages', async (req, res) => {
   if (!req.user) {
-        return res.status(401).json({ error: "Not logged in" });
+    return res.status(401).json({ error: "Not logged in" });
   }
-    let images = req.files.images;
-    let uploadedImages = [];
-    // If there is no image, exit
-    if (!images) {return res.sendStatus(400); }
-    // If there is only one image, make sure it is in an array
-    if (!Array.isArray(images)) {
-      images = [images];
-    }
-    for(let image of images){
-      if (!/^image/.test(image.mimetype)) return res.sendStatus(400);
-       const ext = path.extname(image.name); // get the file extension
 
-      // generate a unique name for the image being saved + the file extension
-      const filename = uuidv4() + ext; 
-      // move the uploaded image to images folder
+  let images = req.files.images;
+  if (!images) return res.sendStatus(400);
+
+  if (!Array.isArray(images)) {
+    images = [images];
+  }
+
+  const uploadedImages = [];
+
+  for (let image of images) {
+    if (!/^image/.test(image.mimetype)) return res.sendStatus(400);
+
+    const ext = path.extname(image.name);
+    const filename = uuidv4() + ext;
+
+    // Wrap image.mv in a promise so we can await it
+    await new Promise((resolve, reject) => {
       image.mv(path.join(__dirname, 'public/Images', filename), (err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Failed to save image');
-        }
+        if (err) reject(err);
+        else resolve();
       });
-      uploadedImages.push(`/Images/${filename}`);
-    }
-     
-    // send the image paths back so we can put them in the database
-    res.json({uploadedImages});
-});
+    });
 
+    uploadedImages.push(`/Images/${filename}`);
+  }
+
+  // send the resolved image paths back
+  res.json({ uploadedImages });
+});
 app.get("/getImages", (req,res) => { // gets the images for the given post id
   let postID = req.query.postID;
   if (!postID) {
