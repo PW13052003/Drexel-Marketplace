@@ -47,8 +47,10 @@ function GetMostRecentPosts() {
         if(currentPosts.length != 0){
             numPages = Math.ceil(currentPosts.length / postsPerPage);
             currentPage = 1;
+            errorMessage.textContent = "";
             displayPosts();
         }else{
+            postsDiv.textContent = "";
             errorMessage.textContent = "Currently no posts to display";
         }
         
