@@ -21,8 +21,8 @@ const io = new Server(server);
 const argon2 = require("argon2");
 app.use(express.json());
 
-//const { v4: uuidv4 } = require('uuid');
-const uuidv4 = (...args) => import('uuid').then(({ v4 }) => v4(...args));
+const { v4: uuidv4 } = require('uuid');
+//const uuidv4 = (...args) => import('uuid').then(({ v4 }) => v4(...args));
 
 const fileUpload = require('express-fileupload');
 
@@ -190,19 +190,8 @@ app.post('/addImages', async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Not logged in" });
   }
-  if (
-    req.body.hasOwnProperty("postID") && 
-    req.body.hasOwnProperty("paths")
-  ) {
-    let postID = req.body.postID;
-    let paths = req.body.paths;
-    for(let path of paths) {
-      pool.query(`INSERT INTO schema_admin.images (post_id, imagePath)
-        VALUES($1, $2)`,
-      [postID, path]);
-    }
-    return res.status(200).json({});
-  }else{
+  
+  if (!req.body.postID || !req.body.paths) {
     console.log("Missing a required field");
     return res.status(400).json({ error: "Missing required field" });
   }
@@ -215,7 +204,7 @@ app.post('/addImages', async (req, res) => {
     for (let path of paths) {
       console.log("adding ", path);
       await pool.query(
-        `INSERT INTO images (post_id, imagePath) VALUES($1, $2)`,
+        `INSERT INTO schema_admin.images (post_id, imagePath) VALUES($1, $2)`,
         [postID, path]
       );
     }

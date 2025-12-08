@@ -64,6 +64,7 @@ export function displayPost(post, isSearchPage) {
             let imagePaths = body.images;
             console.log(imagePaths);
             for (let path of imagePaths) {
+                console.log(path);
                 const img = document.createElement("img");
                 img.src = path.imagepath;
                 img.className = "w-28 h-28 object-cover rounded-md border";
