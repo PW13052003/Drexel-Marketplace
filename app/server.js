@@ -21,8 +21,8 @@ const io = new Server(server);
 const argon2 = require("argon2");
 app.use(express.json());
 
-//const { v4: uuidv4 } = require('uuid');
-const uuidv4 = (...args) => import('uuid').then(({ v4 }) => v4(...args));
+const { v4: uuidv4 } = require('uuid');
+//const uuidv4 = (...args) => import('uuid').then(({ v4 }) => v4(...args));
 
 const fileUpload = require('express-fileupload');
 
@@ -185,9 +185,10 @@ app.post("/createPost", (req, res)=> {
   
 });
 
-app.post('/addImages', (req, res)=> {
+app.post('/addImages', async (req, res) => {
+  console.log("adding images");
   if (!req.user) {
-        return res.status(401).json({ error: "Not logged in" });
+    return res.status(401).json({ error: "Not logged in" });
   }
   if (
     req.body.hasOwnProperty("postID") && 
@@ -203,45 +204,68 @@ app.post('/addImages', (req, res)=> {
     return res.status(200).json({});
   }else{
     console.log("Missing a required field");
-    return res.status(400).json({});
+    return res.status(400).json({ error: "Missing required field" });
+  }
+  
+  const postID = req.body.postID;
+  const paths = req.body.paths;
+  
+  try {
+    // Insert all images
+    for (let path of paths) {
+      console.log("adding ", path);
+      await pool.query(
+        `INSERT INTO images (post_id, imagePath) VALUES($1, $2)`,
+        [postID, path]
+      );
+    }
+    
+    return res.status(200).json({ success: true });
+    
+  } catch (err) {
+    console.error("Database error:", err);
+    return res.status(500).json({ error: "Database error" });
   }
 });
-app.use("/Images", express.static(path.join(__dirname, "public/Images")));
-
+//app.use("/Images", express.static(path.join(__dirname, "public/Images")));
+app.use('/Images', express.static('/data'));
 app.post('/uploadImages', async (req, res) => {
+  console.log("uploading images");
   if (!req.user) {
     return res.status(401).json({ error: "Not logged in" });
   }
-
+  
   let images = req.files.images;
-  if (!images) return res.sendStatus(400);
-
+  let uploadedImages = [];
+  
+  if (!images) { return res.sendStatus(400); }
   if (!Array.isArray(images)) {
     images = [images];
   }
+  
+  try {
 
-  const uploadedImages = [];
+    for(let image of images){
+      if (!/^image/.test(image.mimetype)) return res.sendStatus(400);
 
-  for (let image of images) {
-    if (!/^image/.test(image.mimetype)) return res.sendStatus(400);
+      const ext = path.extname(image.name);
+      // unique filename
+      const filename = uuidv4() + ext;
+      console.log(filename);
 
-    const ext = path.extname(image.name);
-    const filename = uuidv4() + ext;
-
-    // Wrap image.mv in a promise so we can await it
-    await new Promise((resolve, reject) => {
-      image.mv(path.join(__dirname, 'public/Images', filename), (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    uploadedImages.push(`/Images/${filename}`);
+      await image.mv(path.join('/data', filename));
+      
+      uploadedImages.push(`/Images/${filename}`);
+    }
+    
+    res.json({uploadedImages});
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to save image');
   }
-
-  // send the resolved image paths back
-  res.json({ uploadedImages });
 });
+
 app.get("/getImages", (req,res) => { // gets the images for the given post id
   let postID = req.query.postID;
   if (!postID) {
