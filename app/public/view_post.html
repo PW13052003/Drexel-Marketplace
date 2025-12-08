@@ -1,51 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="h-full bg-gray-50">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>View Post</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Post - Drexel Marketplace</title>
     
-</head>
-<body>
-<div id="postDiv">
-
-</div>
-
-<script type="module">
-    import { displayPost } from "./display_post.js";
-    let mainDiv = document.getElementById("postDiv");
-    const urlParams = new URLSearchParams(window.location.search);
-    const post_id = urlParams.get("post_id");
-    getPost(post_id);
-    function getPost(postID) {
-        if(!postID){
-            alert("Post not found");
-            window.location.href = '/search.html';
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
         }
-        let url = `/getPost?post_id=${postID}`;
-            fetch(url).then((response) => {
-            response.json().then(body => {
-                let posts = body.posts;
-                if(posts.length === 0){
-                    alert("Post not found");
-                    window.location.href = '/search.html';
-                }else{
-                    let postDiv =displayPost(posts[0]);
-                    mainDiv.append(postDiv);
+    </script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="h-full font-sans flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <a href="/" class="text-2xl font-bold text-blue-800 hover:text-blue-900 transition">
+                        Drexel Marketplace
+                    </a>
+                </div>
+
+                <div id="user-nav" class="flex items-center space-x-4">
+                    <div class="text-gray-500 text-sm">Loading...</div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-6">
+            <a href="/search.html" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-700 transition">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Search
+            </a>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <div id="postDiv" class="bg-white rounded-2xl shadow-lg overflow-hidden min-h-[300px]">
+                <div id="loading" class="flex justify-center items-center h-64 text-gray-400">
+                    <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-500 text-sm">
+            &copy; 2025 Drexel Marketplace. All rights reserved.
+        </div>
+    </footer>
+
+    <script type="module">
+        import { displayPost } from "./display_post.js";
+        
+        const mainDiv = document.getElementById("postDiv");
+        const loadingDiv = document.getElementById("loading");
+        
+        // 1. Initialize Page
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth(); // Load the navbar
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const post_id = urlParams.get("post_id");
+            
+            if (!post_id) {
+                showError("No post ID provided.");
+                return;
+            }
+
+            getPost(post_id);
+        });
+
+        // 2. Fetch and Display Post
+        function getPost(postID) {
+            const url = `/getPost?post_id=${postID}`;
+            
+            fetch(url)
+                .then((response) => response.json())
+                .then(body => {
+                    const posts = body.posts;
+                    
+                    // Clear loading spinner
+                    loadingDiv.remove();
+
+                    if (!posts || posts.length === 0) {
+                        showError("Post not found or has been removed.");
+                    } else {
+                        // Use your existing displayPost function
+                        // IMPORTANT: Ensure displayPost returns a DOM element (div, etc.)
+                        const postContent = displayPost(posts[0]); 
+                        
+                        // Add some padding to the content if displayPost doesn't have it
+                        if(!postContent.classList.contains('p-6')) {
+                            postContent.classList.add('p-6', 'md:p-8');
+                        }
+                        
+                        mainDiv.append(postContent);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching post:", error);
+                    loadingDiv.remove();
+                    showError("Something went wrong while loading the post.");
+                });
+        }
+
+        // 3. Helper: Show Error Message nicely
+        function showError(msg) {
+            mainDiv.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <div class="bg-red-100 p-3 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Oops!</h3>
+                    <p class="text-gray-600 mb-6">${msg}</p>
+                    <a href="/search.html" class="bg-blue-700 text-white px-6 py-2 rounded-full hover:bg-blue-800 transition">
+                        Browse Other Items
+                    </a>
+                </div>
+            `;
+        }
+
+        // 4. Helper: Navbar Auth Logic (Standard across your app)
+        async function checkAuth() {
+            const userNav = document.getElementById('user-nav');
+            try {
+                const res = await fetch('/auth/whoami');
+                const data = await res.json();
+
+                if (data.loggedIn) {
+                    userNav.innerHTML = `
+                        <span class="text-gray-700 hidden sm:inline">Welcome, ${data.user.first_name}!</span>
+                        <a href="/create_post.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Sell</a>
+                        <a href="/viewprofile/${data.user.id}" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Profile</a>
+                        <a href="/dm/index.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Messages</a>
+                        <a href="/purchases.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Purchases</a>
+                        <button onclick="logout()" class="ml-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-200 transition">Logout</button>
+                    `;
+                } else {
+                    userNav.innerHTML = `
+                        <a href="/login.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Login</a>
+                        <a href="/register.html" class="ml-2 bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-800 transition">Register</a>
+                    `;
                 }
-                
-            }).catch(error => {
-                    // will be executed if attempt
-                    // to parse body as JSON crashes
-                    //message.textContent = "something went wrong";
-                    console.log("Inner error:", error);
-                    });
-            }).catch(error => {
-                console.log(error);
-            });
-    }
-</script>
-<script type="module" src="display_post.js"></script>
+            } catch (err) {
+                console.error(err);
+                userNav.innerHTML = '<a href="/login.html" class="text-red-500">Login</a>';
+            }
+        }
+
+        // Make logout globally available since it's called by onclick
+        window.logout = async function() {
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.reload();
+        }
+    </script>
 </body>
 </html>
