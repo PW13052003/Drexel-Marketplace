@@ -1,60 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="bg-gray-50">
 <head>
-	<meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Create Post</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Post</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Global Styles -->
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
 </head>
-<body>
-    <nav>
-        <a href="home.html">Home</a> <!--placeholder-->
-        <a href="search.html">Search</a>
-    </nav>
-    <button id="logout">Log Out</button>
-    <h1>Create Post</h1>
-    
-    <div class="form">
-        <div>
-            <label for="title" maxLength="20">Title:</label>
-            <input id="title" type="text">
+
+<body class="font-sans">
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="/index.html" class="text-2xl font-bold text-blue-800">
+                    Drexel Marketplace
+                </a>
+
+                <div class="flex items-center space-x-4">
+                    <a href="/search.html" class="text-gray-600 hover:text-blue-700 font-medium">Search</a>
+                    <button id="logout" class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-800">
+                        Log Out
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        <h1 class="text-3xl font-bold text-gray-900 text-center mb-10">
+            Create a New Post
+        </h1>
+
+        <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-6">
+
+            <!-- Title -->
+            <div>
+                <label for="title" class="block text-gray-700 font-medium mb-1">Title</label>
+                <input id="title" type="text"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    maxlength="20">
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="description" class="block text-gray-700 font-medium mb-1">Description</label>
+                <textarea id="description" rows="4" maxlength="500"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-600 focus:outline-none"></textarea>
+            </div>
+
+            <!-- Price -->
+            <div>
+                <label for="price" class="block text-gray-700 font-medium mb-1">Price ($)</label>
+                <input id="price" type="number" min="0.00" step="0.01"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+            </div>
+
+            <!-- Condition -->
+            <div>
+                <span class="block text-gray-700 font-medium mb-1">Condition</span>
+                <div class="flex items-center space-x-5">
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" name="condition" value="new" class="h-4 w-4 text-blue-600">
+                        <span>New</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" name="condition" value="used" class="h-4 w-4 text-blue-600">
+                        <span>Used</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Images -->
+            <div>
+                <label for="images" class="block text-gray-700 font-medium mb-1">Images</label>
+                <input id="images" type="file" multiple accept="image/*"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none">
+
+                <button id="resetImages"
+                    class="mt-2 text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 transition">
+                    Clear Images
+                </button>
+
+                <div id="preview" class="mt-4 grid grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label for="category" class="block text-gray-700 font-medium mb-1">Category</label>
+                <select id="category"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    <option value="">Select a category</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="home">Home</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <button id="submit"
+                class="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg hover:bg-blue-800 transition">
+                Submit Post
+            </button>
+
+            <p id="errorMessage" class="text-center text-red-600 font-medium"></p>
+
         </div>
-        <div>
-            <label for="description">Description:</label>
-            <textarea id="description" rows="4" cols="40" maxLength="500"></textarea>
-        </div>
-        <div>
-            <label for="price" >Price:</label>
-            <input id="price" type="number" min="0.00" step="0.01" >
-        </div>
-        <div>
-            <label>Item Condition:</label>
-            <input type="radio" name="condition" value="new">
-            <label>New</label>
-            <input type="radio" name="condition" value="used">
-            <label>Used</label>
-	    </div>
-        <div>
-            <label for="images">Images:</label>
-            <input id="images" type="file" multiple accept="image/*">
-            <button id="resetImages">Clear Images</button>
-        </div>
-        <div id="preview"></div>
-        <div>
-        <label for="category">Category:</label>
-            <select id="category" name="category">
-                <option value="">Please select the item's category</option>
-                <option value="clothing">Clothing</option>
-                <option value="electronics">Electronics</option>
-                <option value="home">Home</option>
-                <option value="furniture">Furniture</option>
-                <option value="other">Other</option>
-            </select>
-        </div>
-        
-        <button id="submit">Submit</button>
-        <p id="errorMessage"></p>
-    </div>
+
+    </main>
 
     <script src="post.js"></script>
 </body>
