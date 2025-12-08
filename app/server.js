@@ -290,16 +290,17 @@ app.get("/myPurchases", (req, res) => {
       res.status(500).json({ error: "Server error" });
     });
 });
-app.get("/viewprofile/:id", async (req, res) => { // use async because we are doing multiple queries that need to be
-  // completed before the next line of code runs
+
+app.get("/viewprofile/:id", async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Not logged in" });
 
     const loggedInUserID = req.user.id;
     const requestedUserID = req.params.id;
 
+    // 1. Fetch User Details
     const userResult = await pool.query(
-      "SELECT first_name, last_name FROM schema_admin.users WHERE id = $1", // get the user's name to display at the top
+      "SELECT first_name, last_name, email FROM schema_admin.users WHERE id = $1",
       [requestedUserID]
     );
 
@@ -307,69 +308,183 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
       return res.status(400).json({ error: "User not found" });
     }
 
+    const profileUser = userResult.rows[0];
+
+    // 2. Fetch User's Posts
     const postsResult = await pool.query(
       "SELECT * FROM schema_admin.posts WHERE user_id = $1 ORDER BY time_posted DESC",
       [requestedUserID]
     );
 
-    let postHTML = '<div>';
-    postHTML += `<h1>${userResult.rows[0].first_name} ${userResult.rows[0].last_name}</h1>`;
+    // --- START HTML GENERATION ---
+    let postHTML = `
+      <!DOCTYPE html>
+      <html lang="en" class="h-full bg-gray-50">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${profileUser.first_name}'s Profile</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = {
+              theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+            }
+          </script>
+          <link rel="stylesheet" href="/style.css"> 
+      </head>
+      <body class="h-full font-sans flex flex-col">
+        
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex-shrink-0">
+                        <a href="/" class="text-2xl font-bold text-blue-800">Drexel Marketplace</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/search.html" class="text-gray-600 hover:text-blue-700 font-medium">Browse</a>
+                        <a href="/purchases.html" class="text-gray-600 hover:text-blue-700 font-medium">My Purchases</a>
+                        <button onclick="window.location.href='/'" class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-200 transition">Home</button>
+                    </div>
+                </div>
+            </nav>
+        </header>
 
+        <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          <div class="bg-white rounded-2xl shadow-md p-6 mb-8 border border-gray-100">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h1 class="text-3xl font-extrabold text-gray-900">${profileUser.first_name} ${profileUser.last_name}</h1>
+                <p class="text-gray-500 text-sm mt-1">Drexel Student</p>
+                <div id="userRating" class="mt-2 text-yellow-500 font-medium flex items-center">
+                  <span class="text-gray-400 text-sm ml-2">Loading rating...</span>
+                </div>
+              </div>
+    `;
 
-
-    // If the logged-in user is not viewing their own profile, show "Message Seller" button
+    // "Message Seller" Button Logic
     if (requestedUserID != loggedInUserID) {
       postHTML += `
-        <div style="margin:10px 0;">
-          <a href="/dm/index.html?user2=${requestedUserID}" 
-            class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800">
-            Message Seller
-          </a>
-        </div>
+        <a href="/dm/index.html?user2=${requestedUserID}" 
+           class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 shadow-sm transition">
+           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+           Message Seller
+        </a>
       `;
+    } else {
+        postHTML += `
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          This is your profile
+        </span>
+        `;
     }
 
-    postHTML += '<p id="userRating"></p>';
+    postHTML += `
+            </div>
+          </div>
 
+          <h2 class="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">Listings</h2>
+    `;
 
-    // loop through posts
-    for (let post of postsResult.rows) {
-      postHTML += `<div id="${post.id}">`;
-      postHTML += `<h3>${post.title}</h3>`;
-      if(requestedUserID == loggedInUserID) {
-        postHTML += `<button onclick="deletePost(${post.id})">Delete</button>`; // Only add this when the user is viewing their own profile
-      }
-      postHTML += `<button onclick="window.location.href='/view_post.html?post_id=${post.id}'">View Post</button>`;
-      
-      postHTML += `<p>${post.time_posted.toISOString().slice(0, 10)}</p>`;
-      postHTML +=`<p>$${post.price}</p>`;
-      postHTML += `<p>Condition: ${post.condition}</p>`;
+    // Check if user has posts
+    if(postsResult.rows.length === 0) {
+        postHTML += `<p class="text-gray-500 italic">This user hasn't posted any items yet.</p>`;
+    } else {
+        // Start Grid
+        postHTML += `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">`;
 
-      // get images for posts
-      const imagesResult = await pool.query(
-        "SELECT imagepath FROM schema_admin.images WHERE post_id = $1",
-        [post.id]
-      );
-      postHTML += '<div>';
-      for (let img of imagesResult.rows) {
-        postHTML += `<img src="${img.imagepath}" style="width:150px; margin:10px;">`;
-      }
-      postHTML += '</div>';
+        // LOOP THROUGH POSTS
+        for (let post of postsResult.rows) {
+          
+          // Get Images
+          const imagesResult = await pool.query(
+            "SELECT imagepath FROM schema_admin.images WHERE post_id = $1",
+            [post.id]
+          );
+          
+          // Determine main image (fallback if none)
+          let mainImage = imagesResult.rows.length > 0 
+            ? imagesResult.rows[0].imagepath 
+            : 'https://via.placeholder.com/400x300?text=No+Image';
 
-      postHTML += `<p>Description: ${post.post_description}</p>`;
-      if(post.sold){
-        postHTML += '<p>Status: sold</p>';
-      }else{
-        postHTML += '<p>Status: for sale</p>';
-      }
-      
-      postHTML += '</div>';
+          // Determine Badge Color based on status
+          let badgeHTML = post.sold 
+            ? `<span class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">SOLD</span>`
+            : `<span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">FOR SALE</span>`;
+
+          // Card HTML
+          postHTML += `
+            <div id="${post.id}" class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition duration-200 overflow-hidden flex flex-col h-full">
+              
+              <div class="relative h-48 bg-gray-100">
+                <img src="${mainImage}" alt="${post.title}" class="w-full h-full object-cover">
+                ${badgeHTML}
+              </div>
+
+              <div class="p-4 flex flex-col flex-grow">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-gray-900 line-clamp-1">${post.title}</h3>
+                    <p class="text-lg font-semibold text-green-700">$${post.price}</p>
+                </div>
+                
+                <p class="text-xs text-gray-500 mb-2">Posted: ${post.time_posted.toISOString().slice(0, 10)}</p>
+                
+                <p class="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow">${post.post_description}</p>
+                
+                <div class="mt-auto flex gap-2">
+                  <button onclick="window.location.href='/view_post.html?post_id=${post.id}'" 
+                     class="flex-1 bg-white border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded hover:bg-gray-50 transition">
+                     View
+                  </button>
+          `;
+          
+          // Delete button (Only for owner)
+          if(requestedUserID == loggedInUserID) {
+            postHTML += `
+                  <button onclick="deletePost(${post.id})" 
+                     class="flex-1 bg-red-50 border border-red-200 text-red-600 text-sm font-medium py-2 rounded hover:bg-red-100 transition">
+                     Delete
+                  </button>
+            `;
+          }
+
+          postHTML += `
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        // End Grid
+        postHTML += `</div>`; 
     }
-    postHTML += '<h2>Seller Reviews</h2>';
-    postHTML += '<div id="sellerReviews"></div>';
-    postHTML += '</div>';
-    postHTML += '<script src=/getReviews.js></script>'; // script needed for grabbing seller reviews and adding them to div
-    postHTML += '<script src="/deletePost.js"></script>'; // the script needed for post deletion
+
+    // REVIEWS SECTION
+    postHTML += `
+          <div class="mt-12 bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Seller Reviews</h2>
+            <div id="sellerReviews" class="space-y-4">
+                <p class="text-gray-400 italic">Loading reviews...</p>
+            </div>
+          </div>
+
+        </main>
+
+        <footer class="bg-white border-t border-gray-200 mt-auto">
+            <div class="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
+                &copy; 2025 Drexel Marketplace. All rights reserved.
+            </div>
+        </footer>
+
+        <script>
+            // Pass the ID to the client-side script
+            const viewProfileId = "${requestedUserID}";
+        </script>
+        <script src="/getReviews.js"></script> 
+        <script src="/deletePost.js"></script>
+      </body>
+      </html>
+    `;
+
     res.setHeader('Content-Type', 'text/html');
     res.end(postHTML);
 
@@ -378,6 +493,8 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
     res.status(500).json({ error: "Server error" });
   }
 });
+
+
 app.post('/posts/:id/delete', (req, res) => {
   if (!req.user) return res.status(401).json({ error: "Not logged in" });
 
