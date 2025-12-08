@@ -3,8 +3,12 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const pool = require("../db"); 
 const router = express.Router();
-const env = require("../../env.json");
 const argon2 = require("argon2");
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // --- Checks if the email is already in use, creates a verification token, inserts the new user, and sends the email ---
 router.post("/register", async (req, res) => {
@@ -13,7 +17,7 @@ router.post("/register", async (req, res) => {
   try {
     // Check if user already exists
     const existingUser = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      "SELECT * FROM schema_admin.users WHERE email = $1",
       [email]
     );
     if (existingUser.rows.length > 0) {
@@ -26,7 +30,7 @@ router.post("/register", async (req, res) => {
 
     // Insert new user into the database (verified = false)
     await pool.query(
-      `INSERT INTO users (student_id, first_name, last_name, email, phone, password, verification_token, verified)
+      `INSERT INTO schema_admin.users (student_id, first_name, last_name, email, phone, password, verification_token, verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [studentId, firstName, lastName, email, phone, hashedPassword, verificationToken, false]
     );
@@ -35,13 +39,13 @@ router.post("/register", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: env.email,
-        pass: env.email_password,
+        user: EMAIL_USER,
+        pass: EMAIL_PASSWORD,
       },
     });
 
     // Create verification link
-    const verificationLink = `${env.base_url}/auth/verify/${verificationToken}`;
+    const verificationLink = `${APP_URL}/auth/verify/${verificationToken}`;
 
     // Send verification email
     await transporter.sendMail({
@@ -72,7 +76,7 @@ router.get("/verify/:token", async (req, res) => {
   try {
     // Check if token exists
     const user = await pool.query(
-      "SELECT * FROM users WHERE verification_token = $1",
+      "SELECT * FROM schema_admin.users WHERE verification_token = $1",
       [token]
     );
 
@@ -82,7 +86,7 @@ router.get("/verify/:token", async (req, res) => {
 
     // Mark as verified!
     await pool.query(
-      "UPDATE users SET verified = $1, verification_token = NULL WHERE verification_token = $2",
+      "UPDATE schema_admin.users SET verified = $1, verification_token = NULL WHERE verification_token = $2",
       [true, token]
     );
 
@@ -93,14 +97,14 @@ router.get("/verify/:token", async (req, res) => {
   }
 });
 
-module.exports = router;
+//module.exports = router;
 
 
 // POST /auth/login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const q = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const q = await pool.query("SELECT * FROM schema_admin.users WHERE email = $1", [email]);
     if (q.rows.length === 0) return res.status(400).json({ message: "User not found." });
 
     const user = q.rows[0];
@@ -113,12 +117,12 @@ router.post("/login", async (req, res) => {
 
     // Create a random session token and store it
     const token = crypto.randomBytes(32).toString("hex");
-    await pool.query("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", [token, user.id]);
+    await pool.query("INSERT INTO schema_admin.sessions (token, user_id) VALUES ($1, $2)", [token, user.id]);
 
     // Set cookie. In development (localhost) set secure: false.
     res.cookie("session", token, {
       httpOnly: true,
-      secure: false,      // change to true in production with HTTPS
+      secure: IS_PRODUCTION,
       sameSite: "Strict",
       path: "/"
     });
@@ -137,7 +141,7 @@ router.post("/logout", async (req, res) => {
   try {
     const token = req.cookies.session;
     if (token) {
-      await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
+      await pool.query("DELETE FROM schema_admin.sessions WHERE token = $1", [token]);
     }
     // Clear cookie
     res.clearCookie("session", { path: "/" });
@@ -154,4 +158,4 @@ router.get("/whoami", async (req, res) => {
   return res.json({ loggedIn: true, user: req.user });
 });
 
-
+module.exports = router;

@@ -50,7 +50,7 @@ app.use(async (req, res, next) => {
       return next();
     }
     const result = await pool.query(
-      "SELECT user_id FROM sessions WHERE token = $1",
+      "SELECT user_id FROM schema_admin.sessions WHERE token = $1",
       [token]
     );
     if (result.rows.length === 0) {
@@ -59,7 +59,7 @@ app.use(async (req, res, next) => {
     }
     const userId = result.rows[0].user_id;
     // optionally load a few user details
-    const userRow = await pool.query("SELECT id, first_name, email FROM users WHERE id = $1", [userId]);
+    const userRow = await pool.query("SELECT id, first_name, email FROM schema_admin.users WHERE id = $1", [userId]);
     req.user = userRow.rows[0] || null;
     return next();
   } catch (err) {
@@ -161,7 +161,7 @@ app.post("/createPost", (req, res)=> {
     }
 
     pool.query(
-      `INSERT INTO posts (user_id, title, post_description, time_posted, price, condition, category, sold,
+      `INSERT INTO schema_admin.posts (user_id, title, post_description, time_posted, price, condition, category, sold,
   sold_to_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, false, -1)
       RETURNING id`,
@@ -196,7 +196,7 @@ app.post('/addImages', (req, res)=> {
     let postID = req.body.postID;
     let paths = req.body.paths;
     for(let path of paths) {
-      pool.query(`INSERT INTO images (post_id, imagePath)
+      pool.query(`INSERT INTO schema_admin.images (post_id, imagePath)
         VALUES($1, $2)`,
       [postID, path]);
     }
@@ -248,7 +248,7 @@ app.get("/getImages", (req,res) => { // gets the images for the given post id
     return res.status(400).json({ error: "postID is required" });
   }
 
-  pool.query("SELECT imagepath FROM images WHERE post_id = $1", [postID])
+  pool.query("SELECT imagepath FROM schema_admin.images WHERE post_id = $1", [postID])
     .then(result => {
       if (result.rows.length === 0) {
         return res.json({ images: []});
@@ -265,7 +265,7 @@ app.get("/myPurchases", (req, res) => {
         return res.status(401).json({ error: "Not logged in" });
   }
   let userID = req.user.id;
-  pool.query("SELECT * FROM purchases WHERE buyer_id = $1", [userID])
+  pool.query("SELECT * FROM schema_admin.purchases WHERE buyer_id = $1", [userID])
     .then(result => {
       if (result.rows.length === 0) {
         return res.json({ purchases: []});
@@ -286,7 +286,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
     const requestedUserID = req.params.id;
 
     const userResult = await pool.query(
-      "SELECT first_name, last_name FROM users WHERE id = $1", // get the user's name to display at the top
+      "SELECT first_name, last_name FROM schema_admin.users WHERE id = $1", // get the user's name to display at the top
       [requestedUserID]
     );
 
@@ -295,7 +295,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
     }
 
     const postsResult = await pool.query(
-      "SELECT * FROM posts WHERE user_id = $1 ORDER BY time_posted DESC",
+      "SELECT * FROM schema_admin.posts WHERE user_id = $1 ORDER BY time_posted DESC",
       [requestedUserID]
     );
 
@@ -334,7 +334,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
 
       // get images for posts
       const imagesResult = await pool.query(
-        "SELECT imagepath FROM images WHERE post_id = $1",
+        "SELECT imagepath FROM schema_admin.images WHERE post_id = $1",
         [post.id]
       );
       postHTML += '<div>';
@@ -370,11 +370,11 @@ app.post('/posts/:id/delete', (req, res) => {
 
   const postId = req.params.id;
 
-  pool.query("SELECT user_id FROM posts WHERE id = $1", [postId])
+  pool.query("SELECT user_id FROM schema_admin.posts WHERE id = $1", [postId])
     .then(result => {
       if (result.rows.length === 0) return res.status(404).json({ error: "Post not found" });
       if (result.rows[0].user_id != req.user.id) return res.status(403).json({ error: "Not authorized" });
-      return pool.query("DELETE FROM posts WHERE id = $1", [postId]);
+      return pool.query("DELETE FROM schema_admin.posts WHERE id = $1", [postId]);
     })
     .then(() => res.json({}))
     .catch(err => {
@@ -387,7 +387,7 @@ app.get("/getPostTitle", (req, res) => {
   if (!postID) {
     return res.status(400).json({ error: "postID is required" });
   }
-  pool.query("SELECT title FROM posts WHERE id = $1", [postID])
+  pool.query("SELECT title FROM schema_admin.posts WHERE id = $1", [postID])
     .then(result => {
       console.log(result);
       if (result.rows.length === 0) {
@@ -405,7 +405,7 @@ app.get("/getPost", (req, res) => {
   if (!postID) {
     return res.status(400).json({ error: "postID is required" });
   }
-  pool.query("SELECT * FROM posts WHERE id = $1", [postID])
+  pool.query("SELECT * FROM schema_admin.posts WHERE id = $1", [postID])
     .then(result => {
       console.log(result);
       if (result.rows.length === 0) {
@@ -470,7 +470,7 @@ app.get("/search", (req, res) => { // search for posts given filters. Automatica
 
   console.log(req.query);
   let params = [`%${titleText}%`];
-  let query = "SELECT * FROM posts WHERE ($1::text IS NULL OR title ILIKE $1::text)"; // ILIKE is for case insensitive string matches
+  let query = "SELECT * FROM schema_admin.posts WHERE ($1::text IS NULL OR title ILIKE $1::text)"; // ILIKE is for case insensitive string matches
   if (isNew === "true" && isUsed !== "true") {
     query += " AND condition = 'new'";
   } else if (isUsed === "true" && isNew !== "true") {
@@ -543,7 +543,7 @@ app.post("/purchase", async (req, res) => {
     }
 
     const postResult = await pool.query(
-      "SELECT user_id FROM posts WHERE id = $1;",
+      "SELECT user_id FROM schema_admin.posts WHERE id = $1;",
       [post_id]
     );
 
@@ -558,7 +558,7 @@ app.post("/purchase", async (req, res) => {
     }
 
     const existingPurchase = await pool.query(
-      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2;",
+      "SELECT id FROM schema_admin.purchases WHERE post_id = $1 AND buyer_id = $2;",
       [post_id, buyer_id]
     );
 
@@ -567,11 +567,11 @@ app.post("/purchase", async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO purchases (post_id, buyer_id, seller_id) VALUES ($1, $2, $3);`, [post_id, buyer_id, seller_id]
+      `INSERT INTO schema_admin.purchases (post_id, buyer_id, seller_id) VALUES ($1, $2, $3);`, [post_id, buyer_id, seller_id]
     );
 
     await pool.query(
-      `UPDATE posts SET sold_to_id = $1, sold= true WHERE id = $2;`, [buyer_id, post_id]
+      `UPDATE schema_admin.posts SET sold_to_id = $1, sold= true WHERE id = $2;`, [buyer_id, post_id]
     );
     return res.status(200).json({ 
       message: "Purchase recorded successfully!",
@@ -607,7 +607,7 @@ app.post("/addReview", async (req, res) => {
     }
 
     const postResult = await pool.query(
-      "SELECT user_id FROM posts WHERE id = $1;",
+      "SELECT user_id FROM schema_admin.posts WHERE id = $1;",
       [post_id]
     );
 
@@ -622,7 +622,7 @@ app.post("/addReview", async (req, res) => {
     }
 
     const purchaseCheck = await pool.query(
-      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2;",
+      "SELECT id FROM schema_admin.purchases WHERE post_id = $1 AND buyer_id = $2;",
       [post_id, buyer_id]
     );
 
@@ -631,7 +631,7 @@ app.post("/addReview", async (req, res) => {
     }
 
     const reviewCheck = await pool.query(
-      "SELECT id FROM reviews WHERE post_id = $1 AND buyer_id = $2;",
+      "SELECT id FROM schema_admin.reviews WHERE post_id = $1 AND buyer_id = $2;",
       [post_id, buyer_id]
     );
 
@@ -640,11 +640,11 @@ app.post("/addReview", async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO reviews (post_id, buyer_id, rating, review_text) VALUES ($1, $2, $3, $4);`,
+      `INSERT INTO schema_admin.reviews (post_id, buyer_id, rating, review_text) VALUES ($1, $2, $3, $4);`,
       [post_id, buyer_id, rating, review_text]
     );
 
-    await pool.query(`UPDATE purchases SET completed = true WHERE post_id = $1;`,
+    await pool.query(`UPDATE schema_admin.purchases SET completed = true WHERE post_id = $1;`,
       [post_id]
     );
 
@@ -673,8 +673,8 @@ app.get("/reviews/product/:post_id", async (req, res) => {
 
     const result = await pool.query(
       `SELECT r.rating, r.review_text, r.created_at, u.first_name, u.last_name
-       FROM reviews r
-       JOIN users u ON r.buyer_id = u.id
+       FROM schema_admin.reviews r
+       JOIN schema_admin.users u ON r.buyer_id = u.id
        WHERE r.post_id = $1
        ORDER BY r.created_at DESC`,
       [post_id]
@@ -702,9 +702,9 @@ app.get("/reviews/seller/:seller_id", async (req, res) => {
 
     const reviewsResult = await pool.query(
       `SELECT r.rating, r.review_text, r.created_at, u.first_name, u.last_name, p.title AS product_title
-       FROM reviews r
-       JOIN posts p ON r.post_id = p.id
-       JOIN users u ON r.buyer_id = u.id
+       FROM schema_admin.reviews r
+       JOIN schema_admin.posts p ON r.post_id = p.id
+       JOIN schema_admin.users u ON r.buyer_id = u.id
        WHERE p.user_id = $1
        ORDER BY r.created_at DESC`,
       [seller_id]
@@ -745,7 +745,7 @@ app.get("/reviews/eligibility/:post_id", async (req, res) => {
     }
 
     const postResult = await pool.query(
-      "SELECT user_id FROM posts WHERE id = $1",
+      "SELECT user_id FROM schema_admin.posts WHERE id = $1",
       [post_id]
     );
 
@@ -758,14 +758,14 @@ app.get("/reviews/eligibility/:post_id", async (req, res) => {
     const isSeller = (parseInt(buyer_id) === seller_id);
 
     const purchaseResult = await pool.query(
-      "SELECT id FROM purchases WHERE post_id = $1 AND buyer_id = $2",
+      "SELECT id FROM schema_admin.purchases WHERE post_id = $1 AND buyer_id = $2",
       [post_id, buyer_id]
     );
 
     const hasPurchased = purchaseResult.rows.length > 0;
 
     const reviewResult = await pool.query(
-      "SELECT id FROM reviews WHERE post_id = $1 AND buyer_id = $2",
+      "SELECT id FROM schema_admin.reviews WHERE post_id = $1 AND buyer_id = $2",
       [post_id, buyer_id]
     );
 
@@ -799,7 +799,7 @@ app.get("/history/:roomId", async (req, res) => {
   const { roomId } = req.params;
   try {
     const result = await pool.query(
-      "SELECT sender, message, timestamp FROM messages WHERE room_id = $1 ORDER BY timestamp ASC",
+      "SELECT sender, message, timestamp FROM schema_admin.messages WHERE room_id = $1 ORDER BY timestamp ASC",
       [roomId]
     );
     res.json(result.rows);
@@ -822,14 +822,14 @@ app.get("/dmRoom", async (req, res) => {
   try {
     // Check if the room already exists
     const existing = await pool.query(
-      "SELECT room_id FROM dm_rooms WHERE room_id = $1",
+      "SELECT room_id FROM schema_admin.dm_rooms WHERE room_id = $1",
       [roomId]
     );
 
     // If it doesn't exist, insert it
     if (existing.rows.length === 0) {
       await pool.query(
-        "INSERT INTO dm_rooms (room_id, user1, user2) VALUES ($1, $2, $3)",
+        "INSERT INTO schema_admin.dm_rooms (room_id, user1, user2) VALUES ($1, $2, $3)",
         [roomId, user1, user2]
       );
       console.log("Created new DM room:", roomId);
@@ -861,7 +861,7 @@ io.on("connection", (socket) => {
     // Save to database
     try {
       await pool.query(
-        "INSERT INTO messages (room_id, sender, message) VALUES ($1, $2, $3)",
+        "INSERT INTO schema_admin.messages (room_id, sender, message) VALUES ($1, $2, $3)",
         [roomId, sender, message]
       );
     } catch (err) {
@@ -892,7 +892,7 @@ app.get("/dm/myRooms", async (req, res) => {
            WHEN user1 = $1 THEN user2
            ELSE user1
          END AS other_user_id
-       FROM dm_rooms
+       FROM schema_admin.dm_rooms
        WHERE user1 = $1 OR user2 = $1`,
       [myId]
     );
@@ -907,7 +907,7 @@ app.get("/dm/myRooms", async (req, res) => {
     
     const names = await pool.query(
       `SELECT id, first_name, last_name 
-       FROM users 
+       FROM schema_admin.users 
        WHERE id = ANY($1)`,
       [otherUserIds]
     );
@@ -947,7 +947,7 @@ app.get("/dm/list", async (req, res) => {
           WHEN user1 = $1 THEN user2
           ELSE user1
         END AS other_user_id
-      FROM dm_rooms
+      FROM schema_admin.dm_rooms
       WHERE user1 = $1 OR user2 = $1
       ORDER BY created_at DESC
     `, [userId]);
@@ -957,7 +957,7 @@ app.get("/dm/list", async (req, res) => {
     const otherIds = result.rows.map(r => r.other_user_id);
 
     const users = await pool.query(
-      `SELECT id, first_name, last_name FROM users WHERE id = ANY($1)`,
+      `SELECT id, first_name, last_name FROM schema_admin.users WHERE id = ANY($1)`,
       [otherIds]
     );
 

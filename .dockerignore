@@ -3,3 +3,6 @@
 .dockerignore
 Dockerfile
 fly.toml
+env.json
+*.log
+.DS_Store

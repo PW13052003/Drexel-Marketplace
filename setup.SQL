@@ -1,3 +1,88 @@
+-- Create schema first
+CREATE SCHEMA IF NOT EXISTS schema_admin;
+
+-- Set search path so all tables are created in schema_admin
+SET search_path TO schema_admin, public;
+
+-- Now create all your tables
+CREATE TABLE IF NOT EXISTS posts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  title VARCHAR(20),
+  post_description VARCHAR(500),
+  time_posted TIMESTAMP,
+  price NUMERIC(10,2),
+  condition VARCHAR(4),
+  category VARCHAR(12),
+  sold BOOLEAN,
+  sold_to_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS images(
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER,
+  imagePath VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  student_id VARCHAR(8) NOT NULL,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  phone VARCHAR(10),
+  password VARCHAR(255) NOT NULL,
+  verified BOOLEAN DEFAULT false,
+  verification_token VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  room_id VARCHAR(100) NOT NULL,
+  sender VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    review_text VARCHAR(300),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    seller_id INTEGER NOT NULL,
+    completed BOOLEAN DEFAULT false,
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES schema_admin.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dm_rooms (
+    room_id VARCHAR(50) PRIMARY KEY,
+    user1 INTEGER NOT NULL REFERENCES schema_admin.users(id),
+    user2 INTEGER NOT NULL REFERENCES schema_admin.users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Prevent duplicate rooms and enforce consistent ordering
+ALTER TABLE dm_rooms
+DROP CONSTRAINT IF EXISTS unique_user_pair;
+
+ALTER TABLE dm_rooms
+ADD CONSTRAINT unique_user_pair UNIQUE (user1, user2);
+
+/*
 CREATE DATABASE marketplace;
 \c marketplace
 CREATE TABLE posts (
@@ -74,5 +159,5 @@ CREATE TABLE dm_rooms (
 -- Prevent duplicate rooms and enforce consistent ordering
 ALTER TABLE dm_rooms
 ADD CONSTRAINT unique_user_pair UNIQUE (user1, user2);
-
+*/
 
