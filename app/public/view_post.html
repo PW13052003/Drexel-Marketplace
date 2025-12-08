@@ -19,8 +19,54 @@
     </script>
     
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* 1. Turn the container into a Two-Column Grid on large screens */
+        #postDiv > div {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            #postDiv > div {
+                /* Image gets 2/3rds of space, Details get 1/3rd */
+                grid-template-columns: 2fr 1fr; 
+                align-items: start;
+            }
+        }
+
+        /* 2. FORCE the Image to be huge */
+        #postDiv img {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 85vh !important; /* Takes up 85% of screen height */
+            object-fit: contain !important; /* Ensures the whole image is visible (no cropping) */
+            border-radius: 0.75rem;
+            background-color: #f3f4f6; /* Light gray background for non-square images */
+            border: 1px solid #e5e7eb;
+            display: block;
+        }
+
+        /* 3. Style the Text details to look clean next to the big image */
+        #postDiv h3, #postDiv h1 {
+            font-size: 2.25rem !important; /* 36px */
+            line-height: 2.5rem;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 1rem;
+        }
+
+        #postDiv p {
+            font-size: 1.125rem; /* 18px */
+            color: #4b5563;
+            line-height: 1.75;
+            margin-bottom: 1.5rem;
+        }
+    </style>
 </head>
-<body class="h-full font-sans flex flex-col">
+<body class="h-full font-sans flex flex-col bg-white">
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,7 +76,6 @@
                         Drexel Marketplace
                     </a>
                 </div>
-
                 <div id="user-nav" class="flex items-center space-x-4">
                     <div class="text-gray-500 text-sm">Loading...</div>
                 </div>
@@ -38,25 +83,27 @@
         </nav>
     </header>
 
-    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
         
         <div class="mb-6">
             <a href="/search.html" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-700 transition">
-                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Back to Search
             </a>
         </div>
 
-        <div class="max-w-4xl mx-auto">
-            <div id="postDiv" class="bg-white rounded-2xl shadow-lg overflow-hidden min-h-[300px]">
-                <div id="loading" class="flex justify-center items-center h-64 text-gray-400">
-                    <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div id="postDiv" class="min-h-[500px]">
+            <div id="loading" class="flex justify-center items-center h-96 text-gray-400">
+                <div class="text-center">
+                    <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
+                    <p class="text-lg">Loading Post...</p>
                 </div>
             </div>
         </div>
+
     </main>
 
     <footer class="bg-white border-t border-gray-200 mt-auto">
@@ -71,9 +118,9 @@
         const mainDiv = document.getElementById("postDiv");
         const loadingDiv = document.getElementById("loading");
         
-        // 1. Initialize Page
+        // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth(); // Load the navbar
+            await checkAuth(); 
             
             const urlParams = new URLSearchParams(window.location.search);
             const post_id = urlParams.get("post_id");
@@ -86,7 +133,7 @@
             getPost(post_id);
         });
 
-        // 2. Fetch and Display Post
+        // Fetch Post
         function getPost(postID) {
             const url = `/getPost?post_id=${postID}`;
             
@@ -95,48 +142,44 @@
                 .then(body => {
                     const posts = body.posts;
                     
-                    // Clear loading spinner
-                    loadingDiv.remove();
+                    // Remove loading spinner
+                    if(loadingDiv) loadingDiv.remove();
 
                     if (!posts || posts.length === 0) {
                         showError("Post not found or has been removed.");
                     } else {
-                        // Use your existing displayPost function
-                        // IMPORTANT: Ensure displayPost returns a DOM element (div, etc.)
-                        const postContent = displayPost(posts[0]); 
+                        // Generate the HTML from your module
+                        const postContent = displayPost(posts[0]);
                         
-                        // Add some padding to the content if displayPost doesn't have it
-                        if(!postContent.classList.contains('p-6')) {
-                            postContent.classList.add('p-6', 'md:p-8');
-                        }
+                        // We do NOT add padding here anymore, because we want the image 
+                        // to be able to touch the edges of the grid cell.
+                        // We handle spacing via the CSS Grid gap.
                         
                         mainDiv.append(postContent);
                     }
                 })
                 .catch(error => {
                     console.error("Error fetching post:", error);
-                    loadingDiv.remove();
+                    if(loadingDiv) loadingDiv.remove();
                     showError("Something went wrong while loading the post.");
                 });
         }
 
-        // 3. Helper: Show Error Message nicely
         function showError(msg) {
             mainDiv.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-16 text-center px-4">
-                    <div class="bg-red-100 p-3 rounded-full mb-4">
-                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <div class="flex flex-col items-center justify-center py-20 text-center px-4">
+                    <div class="bg-red-100 p-4 rounded-full mb-4">
+                        <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Oops!</h3>
-                    <p class="text-gray-600 mb-6">${msg}</p>
-                    <a href="/search.html" class="bg-blue-700 text-white px-6 py-2 rounded-full hover:bg-blue-800 transition">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Oops!</h3>
+                    <p class="text-gray-600 mb-8 text-lg">${msg}</p>
+                    <a href="/search.html" class="bg-blue-700 text-white px-8 py-3 rounded-full text-lg hover:bg-blue-800 transition">
                         Browse Other Items
                     </a>
                 </div>
             `;
         }
 
-        // 4. Helper: Navbar Auth Logic (Standard across your app)
         async function checkAuth() {
             const userNav = document.getElementById('user-nav');
             try {
@@ -147,8 +190,6 @@
                     userNav.innerHTML = `
                         <span class="text-gray-700 hidden sm:inline">Welcome, ${data.user.first_name}!</span>
                         <a href="/create_post.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Sell</a>
-                        <a href="/viewprofile/${data.user.id}" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Profile</a>
-                        <a href="/dm/index.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Messages</a>
                         <a href="/purchases.html" class="text-gray-600 hover:text-blue-700 font-medium text-sm">Purchases</a>
                         <button onclick="logout()" class="ml-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-200 transition">Logout</button>
                     `;
@@ -164,7 +205,6 @@
             }
         }
 
-        // Make logout globally available since it's called by onclick
         window.logout = async function() {
             await fetch('/auth/logout', { method: 'POST' });
             window.location.reload();
