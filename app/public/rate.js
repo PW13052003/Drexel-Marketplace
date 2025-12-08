@@ -24,7 +24,7 @@ async function checkEligibility(post_id) {
         return;
     }
 
-    msg.textContent = `Eligibility -> hasPurchased: ${data.hasPurchased}, alreadyReviewed: ${data.alreadyReviewed}, isSeller: ${data.isSeller}`;
+    //msg.textContent = `Eligibility -> hasPurchased: ${data.hasPurchased}, alreadyReviewed: ${data.alreadyReviewed}, isSeller: ${data.isSeller}`;
 
     if (data.canReview) {
         reviewSection.style.display = "block";
