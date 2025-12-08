@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Purchases – Drexel Marketplace</title>
+    <title>My Purchases - Drexel Marketplace</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
 
     <script>
         tailwind.config = {
@@ -19,81 +18,147 @@
             },
         }
     </script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="h-full font-sans">
+<body class="h-full font-sans flex flex-col">
 
-    <!-- NAVBAR -->
-    <div id="navbar-container"></div>
+    <header class="bg-white shadow-sm relative z-10">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <a href="/" class="text-2xl font-bold text-blue-800">
+                        Drexel Marketplace
+                    </a>
+                </div>
+
+                <div id="user-nav" class="flex items-center space-x-4">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow bg-gray-50">
+        
+        <div class="bg-blue-800 text-white shadow-md">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                    My Purchases
+                </h1>
+                <p class="text-blue-100 text-lg max-w-2xl mx-auto">
+                    Track your active orders and review items you've bought.
+                </p>
+            </div>
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            
+            <p id="error" class="text-red-600 mb-4 text-center font-medium"></p>
+
+            <div class="grid grid-cols-1 gap-10">
+                
+                <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                    <div class="border-b border-gray-100 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-blue-800">Current Purchases</h2>
+                        <p class="text-gray-600 mt-1">Reviewing a purchase will mark it as completed.</p>
+                    </div>
+
+                    <div id="currentPurchases" class="space-y-4">
+                        </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 opacity-90">
+                    <div class="border-b border-gray-100 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Completed Purchases</h2>
+                        <p class="text-gray-500 mt-1">History of items you have bought and reviewed.</p>
+                    </div>
+                    
+                    <div id="completedPurchases" class="space-y-4">
+                        </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-500">
+            &copy; 2025 Drexel Marketplace. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="purchases.js"></script>
+
     <script>
-        async function loadNavbar() {
-            const container = document.getElementById("navbar-container");
-            const res = await fetch("/partials/navbar.html");
-            container.innerHTML = await res.text();
+        let currentUserId = null;
 
-            const nav = document.getElementById("shared-user-nav");
-            const who = await fetch("/auth/whoami").then(r => r.json());
+        window.addEventListener('DOMContentLoaded', async () => {
+            const userNav = document.getElementById('user-nav');
 
-            if (who.loggedIn) {
-                const u = who.user;
-                nav.innerHTML = `
-                    <span class="text-gray-700">Welcome, ${u.first_name}!</span>
-                    <a href="/create_post.html" class="text-gray-600 hover:text-blue-700 font-medium">Sell</a>
-                    <button onclick="window.location.href='/viewprofile/${u.id}'"
-                        class="text-gray-600 hover:text-blue-700 font-medium">My Profile</button>
-                    <a href="/dm/index.html" class="text-gray-600 hover:text-blue-700 font-medium">Messages</a>
-                    <button onclick="window.location.href='/purchases.html'"
-                        class="text-gray-600 hover:text-blue-700 font-medium">My Purchases</button>
-                    <button onclick="logout()"
-                        class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800">
-                        Logout
-                    </button>
-                `;
-            } else {
-                nav.innerHTML = `
-                    <a href="/login.html" class="text-gray-600 hover:text-blue-700 font-medium">Login</a>
-                    <a href="/register.html"
-                       class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800">
-                       Register
-                    </a>`;
+            try {
+                const res = await fetch('/auth/whoami');
+                const data = await res.json();
+
+                if (data.loggedIn) {
+                    currentUserId = data.user.id;
+
+                    userNav.innerHTML = `
+                        <span class="text-gray-700 hidden md:inline">Welcome, ${data.user.first_name}!</span>
+
+                        <a href="/create_post.html" class="text-gray-600 hover:text-blue-700 font-medium">
+                            Sell
+                        </a>
+
+                        <button onclick="goToProfile()" class="text-gray-600 hover:text-blue-700 font-medium">
+                            My Profile
+                        </button>
+
+                        <a href="/dm/index.html" class="text-gray-600 hover:text-blue-700 font-medium">
+                            Messages
+                        </a>
+
+                        <button onclick="goToMyPurchases()" class="text-blue-700 font-bold">
+                            My Purchases
+                        </button>
+
+                        <button onclick="logout()" 
+                            class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition shadow-sm">
+                            Logout
+                        </button>
+                    `;
+                } else {
+                    userNav.innerHTML = `
+                        <a href="/login.html" class="text-gray-600 hover:text-blue-700 font-medium">
+                            Login
+                        </a>
+
+                        <a href="/register.html" 
+                           class="bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition shadow-sm">
+                            Register
+                        </a>
+                    `;
+                }
+            } catch (err) {
+                console.error('Auth check failed', err);
+                userNav.innerHTML = `<a href="/login.html" class="text-red-500">Login</a>`;
             }
+        });
+
+        function goToProfile() {
+            window.location.href = `/viewprofile/${currentUserId}`;
+        }
+
+        function goToMyPurchases() {
+            window.location.href = `/purchases.html`;
         }
 
         async function logout() {
-            await fetch("/auth/logout", { method: "POST" });
-            window.location.href = "/index.html";
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.reload();
         }
-
-        loadNavbar();
     </script>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
-        <!-- Page Title -->
-        <h1 class="text-3xl font-bold text-blue-800 mb-6">My Purchases</h1>
-        <p id="error" class="text-red-600 mb-4"></p>
-
-        <!-- CURRENT PURCHASES -->
-        <section class="mb-12">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">Current Purchases</h2>
-            <p class="text-gray-600 mb-4">Reviewing a purchase will mark it as completed.</p>
-
-            <div id="currentPurchases" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <!-- Filled by purchases.js -->
-            </div>
-        </section>
-
-        <!-- COMPLETED PURCHASES -->
-        <section>
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Completed Purchases</h2>
-
-            <div id="completedPurchases" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <!-- Filled by purchases.js -->
-            </div>
-        </section>
-
-    </main>
-
-    <script src="purchases.js"></script>
 </body>
 </html>
