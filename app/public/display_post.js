@@ -14,6 +14,9 @@ function purchase(postID) {
     .then(data => {
         console.log(data);
         alert(data.message);
+        if(data.message === "Purchase recorded successfully!") {
+            window.location.href = "/purchases.html";
+        }
     })
     .catch(error => console.log(error));
 }

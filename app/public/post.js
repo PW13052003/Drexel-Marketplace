@@ -1,7 +1,7 @@
 /*
     Client side code for posting
 */
-
+let id = -1;
 let verifiedLogin = false;
 function verify() {
     return fetch("/auth/whoami")
@@ -9,6 +9,7 @@ function verify() {
         .then(body => {
             if (body.loggedIn) {
                 userID = body.user.id;
+                id = body.user.id;
                 return true;
             }
             return false;
@@ -182,6 +183,8 @@ function addPost(imagePaths){
             }else{
                 // no image paths to add, skip last step
                  errorMessage.textContent = "Success";
+                 alert("Post added successfully!");
+                 window.location.href = "/viewprofile/" + id;
             }
             
     
@@ -204,6 +207,8 @@ function addImages(postID, imagePaths){
             return;
         }else{
             errorMessage.textContent = "Success";
+            alert("Post added successfully!");
+            window.location.href = "/viewprofile/" + id;
         }
     }).catch(error => {
             console.log(error);

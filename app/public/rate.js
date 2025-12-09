@@ -66,8 +66,10 @@ function setupReviewSubmit(post_id) {
         else {
             msg.style.color = "green";
             msg.textContent = "Review added!";
+            window.location.href = "/purchases.html";
             loadReviews(post_id);
             checkEligibility(post_id);
+
         }
     }; 
 }
@@ -78,7 +80,7 @@ async function loadReviews(post_id) {
     
     const res = await fetch(`/reviews/product/${post_id}`);
     const data = await res.json();
-
+    /*
     if (!res.ok) {
         list.textContent = "Error loading reviews!";
         return;
@@ -88,7 +90,7 @@ async function loadReviews(post_id) {
         list.textContent = "No reviews yet!";
         return;
     }
-
+    */
     data.reviews.forEach(r => {
         const box = document.createElement("div");
         box.classList.add("reviewBox");

@@ -85,7 +85,7 @@ function displayCurrentPurchases() {
                     let viewPostBtn = document.createElement("button");
                     viewPostBtn.textContent = "View Post";
                     viewPostBtn.className = "px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
-                    viewPostBtn.addEventListener("click", () => goToPost([purchase.post_id]));
+                    viewPostBtn.addEventListener("click", () => goToPost(purchase.post_id));
                     btnGroup.append(viewPostBtn);
                     
                     // 3. Review Seller (Primary Blue Button)
@@ -97,6 +97,7 @@ function displayCurrentPurchases() {
 
                     // Append the group to the main card
                     purchaseDiv.append(btnGroup);
+                    currentPurchasesDiv.append(purchaseDiv);
                 }
             }).catch(error => {
                 console.log("Inner error:", error);
@@ -105,7 +106,7 @@ function displayCurrentPurchases() {
             console.log(error);
         });
 
-        currentPurchasesDiv.append(purchaseDiv);
+        
     }
 }
 
@@ -176,6 +177,7 @@ function displayCompletedPurchases() {
                     */
 
                     purchaseDiv.append(btnGroup);
+                    completedPurchasesDiv.append(purchaseDiv);
                 }
             }).catch(error => {
                 console.log("Inner error:", error);
@@ -184,7 +186,7 @@ function displayCompletedPurchases() {
             console.log(error);
         });
 
-        completedPurchasesDiv.append(purchaseDiv);
+        
     }
 }
 
