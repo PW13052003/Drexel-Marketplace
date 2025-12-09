@@ -38,8 +38,7 @@ function GetMostRecentPosts() {
     let isOther = otherCheckbox.checked;
     
 
-    let url = `/search?titleText=${titleText}&isNew=${isNew}&isUsed=${isUsed}&minPrice=${minPrice}&maxPrice=${maxPrice}&isClothing=
-    ${isClothing}&isElectronics=${isElectronics}&isHome=${isHome}&isFurniture=${isFurniture}&isOther=${isOther}`;
+    let url = `/search?titleText=${titleText}&isNew=${isNew}&isUsed=${isUsed}&minPrice=${minPrice}&maxPrice=${maxPrice}&isClothing=${isClothing}&isElectronics=${isElectronics}&isHome=${isHome}&isFurniture=${isFurniture}&isOther=${isOther}`;
     fetch(url).then((response) => {
     response.json().then(body => {
         console.log(body);
