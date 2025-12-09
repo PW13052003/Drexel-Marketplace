@@ -297,7 +297,7 @@ app.get("/viewprofile/:id", async (req, res) => { // use async because we are do
 
     const loggedInUserID = req.user.id;
     const requestedUserID = req.params.id;
-
+    console.log(requestedUserID);
     const userResult = await pool.query(
       "SELECT first_name, last_name FROM schema_admin.users WHERE id = $1", // get the user's name to display at the top
       [requestedUserID]
